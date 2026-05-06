@@ -601,8 +601,8 @@ FileUploadCard(
   },
 )
 
-// Using FileManagementSystem API
-final controller = FileManagementSystem.instance;
+// Using TransferKit API
+final controller = TransferKit.instance;
 controller.uploadTaskStream(
   filePathAndUrl: FilePathAndURL.local(
     path: localFilePath,

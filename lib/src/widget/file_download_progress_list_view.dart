@@ -11,7 +11,7 @@ import '../model/multi_download_file_task.dart';
 /// Usage example:
 /// ```dart
 /// FileDownloadProgressListView(
-///   progress: multiDownloadTask, // MultiDownloadTask from FileManagementSystem
+///   progress: multiDownloadTask, // MultiDownloadTask from TransferKit
 ///   onFileDownloaded: (task, index) {
 ///     // Handle individual file download completion
 ///     print('File downloaded: ${task.fileName}');

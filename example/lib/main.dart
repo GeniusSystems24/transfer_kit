@@ -20,8 +20,8 @@ void main() async {
     // options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Enable all settings for FileManagementSystem
-  await FileManagementConfig.init(
+  // Enable all settings for TransferKit
+  await TransferKitConfig.init(
     maxConcurrentDownloads: 5,
     maxConcurrentUploads: 3,
     streamCleanupDelay: const Duration(seconds: 3),

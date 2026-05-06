@@ -65,7 +65,7 @@ abstract class FirebaseStorageFactory {
   ///
   /// This delay prevents rapid cleanup/recreation of streams during widget rebuilds.
   static Duration get _cleanupDelay =>
-      FileManagementConfig.instance.streamCleanupDelay;
+      TransferKitConfig.instance.streamCleanupDelay;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // DOWNLOAD TASK CREATION

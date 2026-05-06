@@ -8,7 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 /// Usage example:
 /// ```dart
 /// FileUploadProgressIndicator(
-///   task: uploadTask, // FileTask instance from FileManagementSystem
+///   task: uploadTask, // FileTask instance from TransferKit
 ///   showFileSize: true, // Show file size information
 /// )
 /// ```

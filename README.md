@@ -60,7 +60,7 @@ dependencies:
 
 ### Basic Setup
 
-Customize the library behavior with `FileManagementConfig`:
+Customize the library behavior with `TransferKitConfig`:
 
 ```dart
 import 'package:transfer_kit/transfer_kit.dart';
@@ -69,7 +69,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Configure before initialization
-  await FileManagementConfig.init(
+  await TransferKitConfig.init(
     maxConcurrentDownloads: 3,
     maxConcurrentUploads: 2,
     streamCleanupDelay: Duration(seconds: 5),
@@ -92,7 +92,7 @@ FileLoadingCard(
 )
 
 // Using the API directly
-final fileManager = FileManagementSystem();
+final fileManager = TransferKit();
 final task = await fileManager.downloadTask(
   filePathAndUrl: FilePathAndURL.url(url: imageUrl),
   taskId: 'download_001',
@@ -147,12 +147,12 @@ This architecture provides:
 
 ## Core API
 
-### FileManagementSystem
+### TransferKit
 
 The main controller for all file operations.
 
 ```dart
-final fileManager = FileManagementSystem();
+final fileManager = TransferKit();
 
 // Download operations
 Future<FileTask> downloadTask({...});
@@ -384,7 +384,7 @@ await fileManager.clearCache();
 
 ## Configuration
 
-### FileManagementConfig
+### TransferKitConfig
 
 The library provides a centralized configuration system for customizing behavior.
 
@@ -419,7 +419,7 @@ The library provides a centralized configuration system for customizing behavior
 
 ```dart
 // Initialize with custom settings
-FileManagementConfig.init(
+TransferKitConfig.init(
   // Transfer settings
   maxConcurrentDownloads: 3,
   maxConcurrentUploads: 2,
@@ -447,7 +447,7 @@ FileManagementConfig.init(
 
 ```dart
 // Get current configuration
-final config = FileManagementConfig.instance;
+final config = TransferKitConfig.instance;
 print('Max downloads: ${config.maxConcurrentDownloads}');
 print('Cache enabled: ${config.cacheEnabled}');
 
@@ -464,7 +464,7 @@ print(config.toMap());
 
 ```dart
 // Reset to default values
-FileManagementConfig.reset();
+TransferKitConfig.reset();
 ```
 
 ---
@@ -564,7 +564,7 @@ Automatic waveform extraction for audio visualization:
 
 ```dart
 // Enable waveform extraction in config
-FileManagementConfig.init(
+TransferKitConfig.init(
   autoExtractWaveform: true,
   waveformSamplesPerSecond: 30, // Samples per second of audio
 );
@@ -589,7 +589,7 @@ Automatic thumbnail extraction for images, videos, and PDF documents:
 
 ```dart
 // Enable thumbnail extraction in config
-FileManagementConfig.init(
+TransferKitConfig.init(
   autoExtractThumbnail: true,
   thumbnailMaxWidth: 200,
   thumbnailMaxHeight: 200,
@@ -706,7 +706,7 @@ dependencies:
 The v2.x release of TransferKit introduces stream sharing and centralized configuration. Existing code continues to work without changes, but you can now benefit from:
 
 1. **Automatic Stream Sharing** — No code changes needed, multiple widgets share streams
-2. **Centralized Configuration** — Use `FileManagementConfig.init()` to customize behavior
+2. **Centralized Configuration** — Use `TransferKitConfig.init()` to customize behavior
 3. **New Exception Classes** — Add error chaining with `cause` and `stackTrace`
 4. **Stream Statistics** — Monitor resource usage with `getActiveStreamStats()`
 
@@ -714,7 +714,7 @@ The v2.x release of TransferKit introduces stream sharing and centralized config
 
 ```dart
 // New: Centralized configuration
-FileManagementConfig.init(
+TransferKitConfig.init(
   maxConcurrentDownloads: 3,
   enableLogging: true,
 );

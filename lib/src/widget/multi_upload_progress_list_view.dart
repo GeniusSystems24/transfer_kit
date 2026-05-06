@@ -11,7 +11,7 @@ import 'file_task_card.dart';
 /// Usage example:
 /// ```dart
 /// MultiUploadProgressListView(
-///   progress: multiUploadTask, // MultiUploadTask from FileManagementSystem
+///   progress: multiUploadTask, // MultiUploadTask from TransferKit
 ///   onFileUploaded: (task, index) {
 ///     // Handle individual file upload completion
 ///     print('File uploaded: ${task.fileName}');

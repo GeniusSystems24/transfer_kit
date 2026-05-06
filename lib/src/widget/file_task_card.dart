@@ -9,7 +9,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 /// Usage example:
 /// ```dart
 /// FileTaskCard(
-///   task: fileTask, // A FileTask instance from FileManagementSystem
+///   task: fileTask, // A FileTask instance from TransferKit
 ///   showDetailedInfo: true,
 ///   showFileSize: true,
 ///   onItemTap: (context, task, index) {

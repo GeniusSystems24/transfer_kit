@@ -12,7 +12,7 @@ class TaskManagerScreen extends StatefulWidget {
 class _TaskManagerScreenState extends State<TaskManagerScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _controller = FileManagementSystem.instance;
+  final _controller = TransferKit.instance;
 
   @override
   void initState() {

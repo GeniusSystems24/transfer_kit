@@ -9,7 +9,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 /// Usage example:
 /// ```dart
 /// FileDownloadProgressIndicator(
-///   task: downloadTask, // FileTask instance from FileManagementSystem
+///   task: downloadTask, // FileTask instance from TransferKit
 ///   showFileName: true, // Show the file name
 ///   showFileSize: true, // Show file size information
 ///   showDetailedInfo: true, // Show detailed progress information

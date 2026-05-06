@@ -7,7 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 /// Usage example:
 /// ```dart
 /// MultiUploadProgressIndicator(
-///   progress: multiUploadTask, // MultiUploadTask from FileManagementSystem
+///   progress: multiUploadTask, // MultiUploadTask from TransferKit
 ///   showDetailedInfo: true,
 ///   width: 300,
 ///   height: 150,

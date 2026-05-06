@@ -15,7 +15,7 @@ import 'repository/firebase_file_repository.dart';
 import 'service/task_management_service.dart';
 
 extension CachedFileFromUrl on String {
-  Future<File?> getCachedFile() => FileManagementSystem()
+  Future<File?> getCachedFile() => TransferKit()
       .downloadTask(
         filePathAndUrl: FilePathAndURL.url(url: this),
         taskId: 'cached_file_$this',
@@ -24,15 +24,15 @@ extension CachedFileFromUrl on String {
 }
 
 /// Controller for managing cached files using the repository pattern
-class FileManagementSystem {
+class TransferKit {
   ///
-  static final FileManagementSystem instance = FileManagementSystem._internal();
+  static final TransferKit instance = TransferKit._internal();
 
   /// Factory constructor to return the singleton instance
-  factory FileManagementSystem() => instance;
+  factory TransferKit() => instance;
 
   /// Private constructor for singleton pattern
-  FileManagementSystem._internal();
+  TransferKit._internal();
 
   /// The repository instance used for file operations
   final FirebaseFileRepository repository = FirebaseFileRepository();

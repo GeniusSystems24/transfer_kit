@@ -70,7 +70,7 @@ class _DownloadFileWidgetState extends State<DownloadFileWidget> {
   void _startDownloadIfNeeded() {
     if (widget.autoStart && fileTask == null && localFilePathAndUrl == null) {
       widget.downloadTaskStream?.call(widget.url, widget.taskId, widget.group, widget.autoStart) ??
-          FileManagementSystem.instance.downloadTaskStream(
+          TransferKit.instance.downloadTaskStream(
             filePathAndUrl: FilePathAndURL.url(url: widget.url),
             taskId: widget.taskId,
             group: widget.group,

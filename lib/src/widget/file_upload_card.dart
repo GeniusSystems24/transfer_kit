@@ -114,7 +114,7 @@ class FileUploadCard extends StatefulWidget {
 
   /// Custom controller to use instead of creating a new one
   /// If not provided, a new one will be created
-  final FileManagementSystem? controller;
+  final TransferKit? controller;
 
   /// Whether to automatically initialize the controller in initState
   /// Set to false if you need custom initialization timing
@@ -154,7 +154,7 @@ class FileUploadCard extends StatefulWidget {
 class _FileUploadCardState extends State<FileUploadCard>
     with SingleTickerProviderStateMixin {
   FileTask? _uploadTask;
-  late final FileManagementSystem _controller;
+  late final TransferKit _controller;
 
   late AnimationController _animationController;
 
@@ -162,7 +162,7 @@ class _FileUploadCardState extends State<FileUploadCard>
   void initState() {
     super.initState();
     // Use provided controller or create a new one
-    _controller = widget.controller ?? FileManagementSystem.instance;
+    _controller = widget.controller ?? TransferKit.instance;
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -853,7 +853,7 @@ class _FutureUploadContent extends StatelessWidget {
   final Widget Function(FileTask task)? onUploaded;
   final Widget Function(String error)? onError;
   final Widget? Function(BuildContext context, FileTask? task)? uploadingWidget;
-  final FileManagementSystem controller;
+  final TransferKit controller;
 
   const _FutureUploadContent({
     required this.filePath,
@@ -989,7 +989,7 @@ class _StreamUploadContent extends StatelessWidget {
   final Widget Function(FileTask task)? onUploaded;
   final Widget Function(String error)? onError;
   final Widget? Function(BuildContext context, FileTask? task)? uploadingWidget;
-  final FileManagementSystem controller;
+  final TransferKit controller;
 
   const _StreamUploadContent({
     required this.filePath,

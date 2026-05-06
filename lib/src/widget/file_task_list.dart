@@ -55,7 +55,7 @@ class FileTaskList extends StatefulWidget {
 
   /// Custom file controller to use instead of creating a new one
   /// If not provided, a new one will be created and initialized
-  final FileManagementSystem? controller;
+  final TransferKit? controller;
 
   /// Whether to automatically initialize the controller in initState
   /// Set to false if you need to handle initialization yourself
@@ -87,7 +87,7 @@ class FileTaskList extends StatefulWidget {
 }
 
 class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderStateMixin {
-  late final FileManagementSystem _controller;
+  late final TransferKit _controller;
   late final AnimationController _animationController;
   final ScrollController _scrollController = ScrollController();
 
@@ -95,7 +95,7 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
   void initState() {
     super.initState();
     // Use provided controller or create a new one
-    _controller = widget.controller ?? FileManagementSystem.instance;
+    _controller = widget.controller ?? TransferKit.instance;
     _animationController = AnimationController(duration: const Duration(milliseconds: 600), vsync: this);
 
     // Start animation after build

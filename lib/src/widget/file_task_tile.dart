@@ -27,8 +27,8 @@ class FileTaskTile extends StatelessWidget {
   final bool compact;
   final bool showThumbnail;
 
-  /// Optional controller for task actions. Uses [FileManagementSystem.instance] if not provided.
-  final FileManagementSystem? controller;
+  /// Optional controller for task actions. Uses [TransferKit.instance] if not provided.
+  final TransferKit? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -463,7 +463,7 @@ class FileTaskTile extends StatelessWidget {
   }
 
   Widget _buildTaskAction(ThemeData theme) {
-    final fileController = controller ?? FileManagementSystem.instance;
+    final fileController = controller ?? TransferKit.instance;
 
     if (task.isRunning) {
       return IconButton(

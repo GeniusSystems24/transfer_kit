@@ -13,7 +13,7 @@ import '../model/file_task.dart';
 /// Usage example:
 /// ```dart
 /// FileTaskItem(
-///   task: fileTask, // FileTask instance from FileManagementSystem
+///   task: fileTask, // FileTask instance from TransferKit
 ///   showProgressPercentage: true,
 ///   showFileSize: true,
 ///   onTaskCompleted: () {
@@ -115,12 +115,12 @@ class _FileTaskItemState extends State<FileTaskItem>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _progressAnimation;
-  late FileManagementSystem _fileController;
+  late TransferKit _fileController;
 
   @override
   void initState() {
     super.initState();
-    _fileController = FileManagementSystem.instance;
+    _fileController = TransferKit.instance;
 
     // Initialize animation controller
     _controller = AnimationController(
@@ -618,7 +618,7 @@ class _FileTaskItemState extends State<FileTaskItem>
 
   List<Widget> _buildDefaultActions(
     BuildContext context,
-    FileManagementSystem controller,
+    TransferKit controller,
   ) {
     final actionsList = <Widget>[];
 

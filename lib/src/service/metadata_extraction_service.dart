@@ -34,9 +34,9 @@ import '../model/media_metadata.dart';
 /// ```
 ///
 /// ## Configuration
-/// Extraction behavior can be controlled via [FileManagementConfig]:
+/// Extraction behavior can be controlled via [TransferKitConfig]:
 /// ```dart
-/// FileManagementConfig.init(
+/// TransferKitConfig.init(
 ///   autoExtractMetadata: true,
 ///   autoExtractSha256: true,
 ///   autoExtractThumbnail: true,
@@ -56,7 +56,7 @@ class MetadataExtractionService {
   /// Extracts metadata from a local file.
   ///
   /// This method detects the file type and extracts appropriate metadata.
-  /// Extraction behavior is controlled by [FileManagementConfig] settings.
+  /// Extraction behavior is controlled by [TransferKitConfig] settings.
   ///
   /// ## Parameters
   /// - [file]: The local file to extract metadata from
@@ -68,7 +68,7 @@ class MetadataExtractionService {
     File file, {
     MediaMetadata? existingMetadata,
   }) async {
-    final config = FileManagementConfig.instance;
+    final config = TransferKitConfig.instance;
 
     // Check if metadata extraction is enabled
     if (!config.autoExtractMetadata) {
@@ -160,7 +160,7 @@ class MetadataExtractionService {
       final digest = sha256.convert(bytes);
       return digest.toString();
     } catch (e) {
-      if (FileManagementConfig.instance.enableLogging) {
+      if (TransferKitConfig.instance.enableLogging) {
         print('MetadataExtractionService: Error computing SHA-256: $e');
       }
       return null;
@@ -174,7 +174,7 @@ class MetadataExtractionService {
   /// Extracts metadata from image files using the image package.
   Future<MediaMetadata?> _extractImageMetadata(
     File file,
-    FileManagementConfig config,
+    TransferKitConfig config,
   ) async {
     try {
       final bytes = await file.readAsBytes();
@@ -341,7 +341,7 @@ class MetadataExtractionService {
   /// Extracts metadata from video files.
   Future<MediaMetadata?> _extractVideoMetadata(
     File file,
-    FileManagementConfig config,
+    TransferKitConfig config,
   ) async {
     try {
       ThumbnailData? thumbnail;
@@ -390,7 +390,7 @@ class MetadataExtractionService {
   /// Extracts metadata from audio files using just_audio.
   Future<MediaMetadata?> _extractAudioMetadata(
     File file,
-    FileManagementConfig config,
+    TransferKitConfig config,
   ) async {
     try {
       // Create or reuse audio player
@@ -501,7 +501,7 @@ class MetadataExtractionService {
         averageAmplitude: averageAmplitude,
       );
     } catch (e) {
-      if (FileManagementConfig.instance.enableLogging) {
+      if (TransferKitConfig.instance.enableLogging) {
         print('MetadataExtractionService: Error extracting waveform: $e');
       }
       return null;
@@ -517,7 +517,7 @@ class MetadataExtractionService {
   /// Extracts page count and optionally renders the first page as a thumbnail.
   Future<MediaMetadata?> _extractPdfMetadata(
     File file,
-    FileManagementConfig config,
+    TransferKitConfig config,
   ) async {
     try {
       final document = await PdfDocument.openFile(file.path);
@@ -543,7 +543,7 @@ class MetadataExtractionService {
         thumbnail: thumbnail,
       );
     } catch (e) {
-      if (FileManagementConfig.instance.enableLogging) {
+      if (TransferKitConfig.instance.enableLogging) {
         print('MetadataExtractionService: Error extracting PDF metadata: $e');
       }
       return null;
@@ -600,7 +600,7 @@ class MetadataExtractionService {
         generatedAt: DateTime.now(),
       );
     } catch (e) {
-      if (FileManagementConfig.instance.enableLogging) {
+      if (TransferKitConfig.instance.enableLogging) {
         print('MetadataExtractionService: Error extracting PDF thumbnail: $e');
       }
       return null;

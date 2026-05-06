@@ -14,7 +14,7 @@ import '../../transfer_kit.dart';
 ///   WidgetsFlutterBinding.ensureInitialized();
 ///
 ///   // Configure the file management system
-///   FileManagementConfig.init(
+///   TransferKitConfig.init(
 ///     maxConcurrentDownloads: 3,
 ///     maxConcurrentUploads: 2,
 ///     streamCleanupDelay: Duration(seconds: 5),
@@ -44,34 +44,34 @@ import '../../transfer_kit.dart';
 ///
 /// ```dart
 /// // Get current configuration
-/// final config = FileManagementConfig.instance;
+/// final config = TransferKitConfig.instance;
 /// print('Max downloads: ${config.maxConcurrentDownloads}');
 ///
 /// // Check if logging is enabled
-/// if (FileManagementConfig.instance.enableLogging) {
+/// if (TransferKitConfig.instance.enableLogging) {
 ///   print('Debug mode is ON');
 /// }
 /// ```
-class FileManagementConfig {
+class TransferKitConfig {
   // ═══════════════════════════════════════════════════════════════════════════
   // SINGLETON PATTERN
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static FileManagementConfig? _instance;
+  static TransferKitConfig? _instance;
 
-  /// Gets the singleton instance of [FileManagementConfig].
+  /// Gets the singleton instance of [TransferKitConfig].
   ///
   /// If [init] has not been called, returns an instance with default values.
-  static FileManagementConfig get instance {
-    _instance ??= FileManagementConfig._internal();
+  static TransferKitConfig get instance {
+    _instance ??= TransferKitConfig._internal();
     return _instance!;
   }
 
   /// Private constructor for singleton pattern.
-  FileManagementConfig._internal();
+  TransferKitConfig._internal();
 
   // constructor
-  FileManagementConfig({
+  TransferKitConfig({
     int? maxConcurrentDownloads,
     int? maxConcurrentUploads,
     Duration? streamCleanupDelay,
@@ -133,7 +133,7 @@ class FileManagementConfig {
   /// ## Example
   ///
   /// ```dart
-  /// FileManagementConfig.init(
+  /// TransferKitConfig.init(
   ///   maxConcurrentDownloads: 3,
   ///   maxConcurrentUploads: 2,
   ///   streamCleanupDelay: Duration(seconds: 5),
@@ -164,7 +164,7 @@ class FileManagementConfig {
     int? waveformSamplesPerSecond,
   }) async {
     await GetStorage.init();
-    _instance = FileManagementConfig._internal()
+    _instance = TransferKitConfig._internal()
       .._maxConcurrentDownloads = maxConcurrentDownloads ?? 5
       .._maxConcurrentUploads = maxConcurrentUploads ?? 3
       .._streamCleanupDelay = streamCleanupDelay ?? const Duration(seconds: 3)
@@ -449,6 +449,6 @@ class FileManagementConfig {
 
   @override
   String toString() {
-    return 'FileManagementConfig(${toMap()})';
+    return 'TransferKitConfig(${toMap()})';
   }
 }

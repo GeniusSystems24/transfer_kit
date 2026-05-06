@@ -117,7 +117,7 @@ class FileLoadingCard extends StatefulWidget {
 
   /// Custom controller to use instead of creating a new one
   /// If not provided, a new one will be created
-  final FileManagementSystem? controller;
+  final TransferKit? controller;
 
   /// Whether to automatically initialize the controller in initState
   /// Set to false if you need custom initialization timing
@@ -163,7 +163,7 @@ class FileLoadingCard extends StatefulWidget {
 class _FileLoadingCardState extends State<FileLoadingCard>
     with SingleTickerProviderStateMixin {
   FileTask? _downloadTask;
-  late final FileManagementSystem _controller;
+  late final TransferKit _controller;
   bool _isInitialized = false;
   late AnimationController _animationController;
 
@@ -171,7 +171,7 @@ class _FileLoadingCardState extends State<FileLoadingCard>
   void initState() {
     super.initState();
     // Use provided controller or create a new one
-    _controller = widget.controller ?? FileManagementSystem.instance;
+    _controller = widget.controller ?? TransferKit.instance;
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -1060,7 +1060,7 @@ class _FutureLoadingContent extends StatelessWidget {
   final Widget Function(FileTask task) onLoaded;
   final Widget Function(String error)? onError;
   final bool checkCacheFirst;
-  final FileManagementSystem controller;
+  final TransferKit controller;
   final FileTask? initialTaskValue;
   final Widget? Function(BuildContext context, FileTask? progress)?
       downloadingWidget;
@@ -1208,7 +1208,7 @@ class _StreamLoadingContent extends StatelessWidget {
   final Widget Function(FileTask task) onLoaded;
   final Widget Function(String error)? onError;
   final bool checkCacheFirst;
-  final FileManagementSystem controller;
+  final TransferKit controller;
   final FileTask? initialTaskValue;
   final Widget? Function(BuildContext context, FileTask? progress)?
       downloadingWidget;

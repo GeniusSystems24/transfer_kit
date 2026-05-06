@@ -46,7 +46,7 @@ class MultiFileLoadingCard extends StatefulWidget {
 
   /// Custom controller to use instead of creating a new one
   /// If not provided, a new one will be created
-  final FileManagementSystem? controller;
+  final TransferKit? controller;
 
   /// Callback when all files are completely downloaded
   final Function(List<File> files)? onAllFilesLoaded;
@@ -75,14 +75,14 @@ class MultiFileLoadingCard extends StatefulWidget {
 }
 
 class _MultiFileLoadingCardState extends State<MultiFileLoadingCard> {
-  late final FileManagementSystem _fileController;
+  late final TransferKit _fileController;
   final Set<int> _reportedFileIndices = {};
   bool _allFilesReported = false;
 
   @override
   void initState() {
     super.initState();
-    _fileController = widget.controller ?? FileManagementSystem.instance;
+    _fileController = widget.controller ?? TransferKit.instance;
   }
 
   void _handleProgressUpdate(MultiDownloadFileTask progress) {

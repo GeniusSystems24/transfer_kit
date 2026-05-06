@@ -17,7 +17,7 @@
 /// await FilePathExtension.initAppDirectory();
 ///
 /// // Get the file manager
-/// final fileManager = FileManagementSystem();
+/// final fileManager = TransferKit();
 ///
 /// // Download a file
 /// final task = await fileManager.downloadTask(

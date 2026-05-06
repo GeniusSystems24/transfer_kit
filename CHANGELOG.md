@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Normalized amplitude samples (0.0 to 1.0)
   - Configurable samples per second via `waveformSamplesPerSecond`
   - New `autoExtractWaveform` configuration option
-- **Metadata Configuration Options** - New settings in `FileManagementConfig`:
+- **Metadata Configuration Options** - New settings in `TransferKitConfig`:
   - `autoExtractMetadata` - Enable/disable automatic metadata extraction
   - `autoExtractSha256` - Enable/disable SHA-256 hash computation
   - `autoExtractThumbnail` - Enable/disable thumbnail generation
@@ -52,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Centralized Configuration System
 
-- `FileManagementConfig` - New singleton class for library-wide configuration
+- `TransferKitConfig` - New singleton class for library-wide configuration
   - `maxConcurrentDownloads` - Limit simultaneous downloads (default: 5)
   - `maxConcurrentUploads` - Limit simultaneous uploads (default: 3)
   - `streamCleanupDelay` - Delay before cleaning unused streams (default: 3s)
@@ -133,7 +133,7 @@ Existing code continues to work without changes. New features are opt-in:
 
 ```dart
 // Optional: Configure the library
-FileManagementConfig.init(
+TransferKitConfig.init(
   maxConcurrentDownloads: 3,
   enableLogging: true,
 );
@@ -174,7 +174,7 @@ print('Dimensions: ${cachedFile?.metadata?.width}x${cachedFile?.metadata?.height
 ### Added
 
 - Initial release
-- `FileManagementSystem` - Main controller for file operations
+- `TransferKit` - Main controller for file operations
 - `FileTask` - Task model with state management
 - `FilePathAndURL` - Path/URL handling model
 - File upload with progress tracking
