@@ -65,7 +65,7 @@ After every successful download, TransferKit records a complete, validated cache
 
 **Acceptance Scenarios**:
 
-1. **Given** a download completes successfully, **When** the cache index is written, **Then** the entry contains: cache key, source URL, local path, file size (if known), mime type (if known), `createdAt`, `updatedAt`, and `lastAccessedAt`.
+1. **Given** a download completes successfully, **When** the cache index is written, **Then** the entry contains: cache key, source URL, local path, file size (if known), mime type (if known), `createdAt`, `updatedAt`, `lastAccessedAt`, and any file metadata extracted from the downloaded file (e.g., image dimensions, video duration, audio properties including waveform data, document page count).
 2. **Given** a cache entry has an `expiresAt` value in the past, **When** a cache lookup is performed, **Then** TransferKit treats the entry as a cache miss.
 3. **Given** a cache hit occurs, **When** the file is returned to the caller, **Then** `lastAccessedAt` on the cache entry is updated to the current time.
 
@@ -91,7 +91,7 @@ A developer can selectively clean the cache — removing a single file, a group 
 ### Edge Cases
 
 - What happens when the app loses connectivity mid-download after a cache miss?
-- How does the system handle two simultaneous first-time requests for the same uncached file?
+- Two simultaneous first-time requests for the same uncached file are deduplicated: TransferKit starts one download and shares its task stream with both callers; no second download is initiated.
 - What happens when the cache directory is full and a new file cannot be written?
 - How does the system handle a cache key collision between semantically different URLs?
 - What happens when a cached file exists on disk but cannot be read (corrupted or permission denied)?
@@ -102,27 +102,31 @@ A developer can selectively clean the cache — removing a single file, a group 
 ### Functional Requirements
 
 - **FR-001**: TransferKit MUST check the local cache index before initiating any network download.
-- **FR-002**: TransferKit MUST physically verify that the local cached file exists on disk and is readable before reporting a cached state.
+- **FR-002**: TransferKit MUST verify a cached file before reporting a cached state using a two-tier strategy: (1) file existence check always runs; (2) SHA-256 hash verification runs only when explicitly enabled via `TransferKitConfig` — the hash MUST have been computed and stored at download time for this check to apply; if no stored hash is available, the existence check is used as the sole gate.
 - **FR-003**: TransferKit MUST NOT initiate a new network download when a valid, verified local cached file exists for the requested cache key.
-- **FR-004**: TransferKit MUST define and document a stable cache key strategy; the default key is the normalized source URL; callers MAY provide an explicit cache key to override the default.
+- **FR-004**: TransferKit MUST define and document a stable cache key strategy; callers MAY provide an explicit `cacheKey` to guarantee stable identity across signed URL rotations; when no `cacheKey` is provided, TransferKit MUST use the full URL as-is (callers using signed or temporary URLs without an explicit key will experience a cache miss on every new URL generation — this behavior MUST be documented).
 - **FR-005**: TransferKit MUST treat a cache index entry whose local file is missing as a cache miss and repair or remove the stale entry before re-downloading.
 - **FR-006**: TransferKit MUST support a forced refresh mode that bypasses the cache and replaces the local cache entry upon successful download completion.
 - **FR-007**: TransferKit MUST update `updatedAt` after a download or cache entry modification, and `lastAccessedAt` after every cache hit.
-- **FR-008**: TransferKit MUST persist cache entries containing: cache key, source URL, local file path, file size (when known), mime type (when known), `createdAt`, `updatedAt`, `lastAccessedAt`, and `expiresAt` (when expiration is configured).
+- **FR-008**: TransferKit MUST persist cache entries containing: cache key, source URL, local file path, file size (when known), mime type (when known), `createdAt`, `updatedAt`, `lastAccessedAt`, `expiresAt` (when expiration is configured), and file metadata (when available — see FR-019).
 - **FR-009**: TransferKit MUST support deleting a single cache entry and its associated local file.
 - **FR-010**: TransferKit MUST support deleting a specified set of cache entries and their associated local files.
 - **FR-011**: TransferKit MUST support clearing all cache entries whose `expiresAt` timestamp has passed.
 - **FR-012**: TransferKit MUST support repairing stale cache entries by removing index records for files that no longer exist locally.
 - **FR-013**: Cache cleanup operations MUST NOT perform any remote file deletions.
-- **FR-014**: Cache state and transitions MUST be observable through task state and streams without requiring any UI widget interaction.
+- **FR-014**: Cache state and transitions MUST be observable through task state and streams without requiring any UI widget interaction; a cache hit MUST emit `FileTaskState.cached`, which is distinct from `FileTaskState.completed`.
 - **FR-015**: TransferKit MUST include regression tests covering: cache hit, cache miss, stale cache entry detection, deleted local file recovery, forced refresh, and cache cleanup.
+- **FR-016**: The directory used to store cached files MUST be configurable via `TransferKitConfig`; when not specified by the caller, TransferKit MUST default to the application support directory.
+- **FR-017**: When SHA-256 hash verification is enabled via `TransferKitConfig`, TransferKit MUST compute and store the file hash in the cache entry at download completion time; hash verification MUST be skipped for entries that pre-date this feature or have no stored hash.
+- **FR-018**: When multiple callers simultaneously request the same file that is not yet cached and has no active download, TransferKit MUST deduplicate the request — starting exactly one download and sharing its task stream with all callers; no parallel duplicate downloads for the same cache key are permitted.
+- **FR-019**: After a successful download, TransferKit MUST extract file metadata from the local file (subject to `TransferKitConfig` metadata extraction flags) and persist it as part of the cache entry; for audio files this includes waveform data when waveform extraction is enabled; if extraction is disabled or fails, the cache entry MUST still be written without metadata rather than failing the entire cache operation; on a cache hit, the persisted metadata MUST be returned to the caller alongside the local file path.
 
 ### Key Entities
 
-- **CacheEntry**: A record in the cache index representing one downloaded file — attributes include cache key, source URL, local file path, file size, mime type, `createdAt`, `updatedAt`, `lastAccessedAt`, `expiresAt`, and an optional metadata map.
+- **CacheEntry**: A record in the cache index representing one downloaded file — attributes include cache key, source URL, local file path, file size, mime type, `createdAt`, `updatedAt`, `lastAccessedAt`, `expiresAt`, an optional SHA-256 hash (populated only when hash verification is enabled), and optional file metadata (image dimensions, video duration, audio properties including waveform data, document page count, etc.) extracted from the local file at download time and returned to the caller on cache hit.
 - **CacheKey**: A stable, deterministic identifier for a cached file, derived from a normalized URL by default or supplied explicitly by the caller; transient signed URLs must not serve as the sole cache key.
 - **CacheIndex**: The persistent collection of all CacheEntry records; must remain consistent with actual files on local storage.
-- **DownloadTask**: Represents a download operation with observable state; state must accurately reflect whether the result originated from local cache or a network download.
+- **DownloadTask**: Represents a download operation with observable state; state must accurately reflect whether the result originated from local cache (`FileTaskState.cached`) or a completed network download (`FileTaskState.completed`).
 
 ## Success Criteria *(mandatory)*
 
@@ -139,10 +143,22 @@ A developer can selectively clean the cache — removing a single file, a group 
 ## Assumptions
 
 - The existing local persistence mechanism (GetStorage) will be used for the cache index; a new database is not required unless proven inadequate during planning.
-- Cache key defaults to the normalized source URL; callers who use signed or temporary URLs must provide an explicit stable cache key — this behavior will be documented.
+- Cache key defaults to the full source URL when no explicit `cacheKey` is provided; callers using Firebase signed URLs or other rotating URLs MUST supply a stable `cacheKey` to benefit from cache reuse — omitting it results in a predictable cache miss on every new URL, which is the intended and documented behavior.
 - File expiration is optional and disabled by default; expiry is only enforced when `expiresAt` is explicitly set on an entry.
 - Maximum cache size enforcement is out of scope for this phase and may be documented as a planned future capability.
 - The cache operates exclusively on local app storage; remote storage (Firebase, CDN) is never touched by any cache operation.
 - Widget layer changes are out of scope; all improvements target the library's core layer.
 - Cache behavior is unit-testable without live network connections by using mocks or fakes for the download transport layer.
-- The existing `completed` task state may serve as the cache-hit state, or a dedicated `cached` state may be introduced — the final lifecycle decision will be made during the planning phase.
+- The cache file storage directory defaults to the application support directory (hidden from users, cleared on uninstall, persists across app updates); callers may override this via `TransferKitConfig`.
+- Cache hits emit `FileTaskState.cached` — a dedicated state distinct from `completed`; widgets can differentiate between a file served from local cache and one resulting from a completed network download.
+
+## Clarifications
+
+### Session 2026-05-07
+
+- Q: When TransferKit serves a file from local cache, what `FileTaskState` should it emit? → A: `FileTaskState.cached` — a new dedicated state, distinct from `completed`.
+- Q: Where should TransferKit store downloaded cached files on the device? → A: Configurable via `TransferKitConfig`, defaulting to the application support directory.
+- Q: How should TransferKit derive the cache key when a signed URL is used as the download source? → A: Require caller to provide an explicit `cacheKey`; if omitted, fall back to the full URL as-is (predictable cache miss per new signed URL — documented behavior).
+- Q: How deeply should TransferKit validate a cached file before serving it? → A: Existence check always; SHA-256 hash verification opt-in via `TransferKitConfig` (hash stored at download time; skipped if no hash is stored).
+- Q: If two widgets simultaneously request the same uncached file with no active download, how should TransferKit handle the second request? → A: Deduplicate — share the single in-flight download; both callers observe the same task stream.
+- Decision: File metadata MUST be extracted after download and persisted as part of the cache entry; returned to the caller on every cache hit alongside the local file path; metadata extraction failure must not fail the cache write; audio files MUST include waveform data when waveform extraction is enabled in `TransferKitConfig`.

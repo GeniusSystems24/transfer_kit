@@ -438,6 +438,19 @@ A change is not complete unless:
 - Documentation is updated when behavior changes.
 - The package passes format, analyze, and test checks.
 
+## SpecKit Workflow Conventions
+
+### Clarification Language Policy
+
+All `/speckit-clarify` sessions MUST present each question in **English first, immediately followed by Arabic**. This applies to:
+
+- The question text itself
+- All answer option descriptions
+- The recommendation/suggestion line
+- Any follow-up disambiguation prompts
+
+Rationale: TransferKit is maintained by a bilingual team. Bilingual clarification ensures all stakeholders can participate in design decisions without a language barrier.
+
 ## Governance
 
 This constitution defines the stable engineering principles of TransferKit
@@ -472,4 +485,4 @@ file layout live in `CLAUDE.md` at the package root. That file is subordinate
 to this constitution: if the two ever conflict, this document wins and
 `CLAUDE.md` MUST be corrected.
 
-**Version**: 1.0.0 | **Ratified**: 2026-05-06 | **Last Amended**: 2026-05-06
+**Version**: 1.1.0 | **Ratified**: 2026-05-06 | **Last Amended**: 2026-05-07
