@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import 'core/extension/file_path_extension.dart';
@@ -11,6 +9,7 @@ import 'model/file_path_and_url.dart';
 import 'model/file_task.dart';
 import 'model/multi_download_file_task.dart';
 import 'model/multi_upload_file_task.dart';
+import 'repository/file_path_and_url_repository.dart';
 import 'repository/firebase_file_repository.dart';
 import 'service/task_management_service.dart';
 
@@ -128,10 +127,9 @@ class TransferKit {
   /// [url] The Firebase Storage URL of the file
   /// Returns a [Future<bool>] indicating whether the file is cached
   Future<bool> isFileCached(String url) async {
-    final localPath = await _getLocalPath(url);
-    final appDir = await getApplicationDocumentsDirectory();
-    final file = File(path.join(appDir.path, localPath));
-    return await file.exists();
+    final entry = FilePathAndURLRepository.instance.getByUrl(url);
+    if (entry != null) return File(entry.path).exists();
+    return File(url.toHashName().toCachedPath()).exists();
   }
 
   /// Gets the cached file path for the given URL
@@ -139,60 +137,47 @@ class TransferKit {
   /// [url] The Firebase Storage URL of the file
   /// Returns a [Future<String?>] containing the local file path if cached, null otherwise
   Future<String?> getCachedFilePath(String url) async {
-    final localPath = await _getLocalPath(url);
-    final appDir = await getApplicationDocumentsDirectory();
-    final filePath = path.join(appDir.path, localPath);
-
+    final entry = FilePathAndURLRepository.instance.getByUrl(url);
+    final filePath = entry?.path ?? url.toHashName().toCachedPath();
     final file = File(filePath);
-    if (await file.exists()) {
-      return filePath;
-    }
-
+    if (await file.exists()) return filePath;
     return null;
   }
 
-  /// Clears the cached file for the given URL
+  /// Clears the cached file for the given URL and removes its index entry.
   ///
   /// - [url] The URL of the file to clear from cache
   Future<void> clearCache(String url) async {
-    final localPath = await _getLocalPath(url);
-    final appDir = await getApplicationDocumentsDirectory();
-    final file = File(path.join(appDir.path, localPath));
-    if (await file.exists()) {
-      await file.delete();
+    final entry = FilePathAndURLRepository.instance.getByUrl(url);
+    if (entry != null) {
+      final file = File(entry.path);
+      if (await file.exists()) await file.delete();
+      FilePathAndURLRepository.instance.remove(entry);
+    } else {
+      // Fallback: hash-based deletion for backward compatibility
+      final file = File(url.toHashName().toCachedPath());
+      if (await file.exists()) await file.delete();
     }
   }
 
-  /// Clears the cached files for the given URLs
+  /// Clears cached files for the given URLs and removes their index entries.
   ///
   /// - [urls] The URLs of the files to clear from cache
   Future<void> clearCacheForUrls(Set<String> urls) async {
-    final localPaths = await _getLocalPathsForUrls(urls);
-    for (final localPath in localPaths) {
-      final appDir = await getApplicationDocumentsDirectory();
-      final file = File(path.join(appDir.path, localPath));
-      if (await file.exists()) {
-        await file.delete();
-      }
-    }
-  }
-
-  /// Generates a unique local path for a file based on its URL
-  ///
-  /// - [url] The URL of the file to generate a local path for
-  ///
-  /// Returns a [Future<String>] containing the local path
-  Future<String> _getLocalPath(String url) async =>
-      url.toHashName().toCachedPath();
-
-  /// Generates local paths for a list of URLs
-  Future<Set<String>> _getLocalPathsForUrls(Set<String> urls) async {
-    final Set<String> paths = {};
     for (final url in urls) {
-      paths.add(await _getLocalPath(url));
+      await clearCache(url);
     }
-    return paths;
   }
+
+  /// Deletes local files and removes index entries where [expiresAt] has passed.
+  /// Returns the number of entries removed. No remote operations.
+  Future<int> clearExpiredCacheEntries() =>
+      FilePathAndURLRepository.instance.clearExpiredEntries();
+
+  /// Removes index entries where the local file no longer exists on disk.
+  /// Returns the count of stale entries repaired. No remote operations.
+  Future<int> repairStaleCacheEntries() =>
+      FilePathAndURLRepository.instance.repairStaleEntries();
 
   /// Get tasks by group ID
   Set<FileTask> getTasksByGroupId(String groupId) =>
@@ -399,6 +384,7 @@ class TransferKit {
     bool autoStart = true,
     required String taskId,
     FileGroupInfo? group,
+    bool forceRefresh = false,
   }) {
     group ??= FileGroupInfo(id: const Uuid().v4());
 
@@ -417,6 +403,7 @@ class TransferKit {
       controller: controller,
       taskId: taskId,
       group: group,
+      forceRefresh: forceRefresh,
     ).catchError((error) {
       if (!controller.isClosed) {
         controller.addError(
@@ -435,6 +422,7 @@ class TransferKit {
     required FileGroupInfo group,
     required String taskId,
     bool autoStart = true,
+    bool forceRefresh = false,
   }) async {
     try {
       final task = await repository.createDownloadTask(
@@ -442,6 +430,7 @@ class TransferKit {
         taskId: taskId,
         group: group,
         autoStart: autoStart,
+        forceRefresh: forceRefresh,
       );
 
       // Stream the download with progress updates
@@ -467,6 +456,7 @@ class TransferKit {
     required String taskId,
     bool autoStart = true,
     FileGroupInfo? group,
+    bool forceRefresh = false,
   }) async {
     group ??= FileGroupInfo(id: const Uuid().v4());
 
@@ -475,6 +465,7 @@ class TransferKit {
       taskId: taskId,
       group: group,
       autoStart: autoStart,
+      forceRefresh: forceRefresh,
     ).last;
   }
 

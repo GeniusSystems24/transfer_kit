@@ -423,6 +423,7 @@ class FirebaseFileRepository {
     required String taskId,
     required FileGroupInfo group,
     bool autoStart = true,
+    bool forceRefresh = false,
   }) async {
     // If filePathAndUrl has metadata, store it for later retrieval
     if (filePathAndUrl.metadata != null) {
@@ -434,6 +435,8 @@ class FirebaseFileRepository {
       taskId: taskId,
       group: group,
       autoStart: autoStart,
+      cacheKey: filePathAndUrl.cacheKey,
+      forceRefresh: forceRefresh,
     );
   }
 
@@ -501,7 +504,15 @@ class FirebaseFileRepository {
           existingMetadata: existingFilePathAndUrl?.metadata ?? filePathAndURL.metadata,
         );
         filePathAndURL = filePathAndURL.copyWithMergedMetadata(extractedMetadata);
-      
+
+        // Stamp timestamps: preserve createdAt on update, always set updatedAt
+        final now = DateTime.now();
+        final isNew = existingFilePathAndUrl == null;
+        filePathAndURL = filePathAndURL.copyWith(
+          createdAt: isNew ? now : existingFilePathAndUrl.createdAt,
+          updatedAt: now,
+        );
+
         // Save to file path repository for caching (includes metadata)
         FilePathAndURLRepository.instance.addOrUpdate(filePathAndURL);
         // Clean up completed tasks

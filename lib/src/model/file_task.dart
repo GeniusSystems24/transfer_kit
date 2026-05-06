@@ -7,6 +7,7 @@ import '../core/extension/map_extension.dart';
 import '../core/get_storage_repository.dart';
 import '../repository/file_task_repository.dart';
 import 'file_path_and_url.dart';
+import 'media_metadata.dart';
 
 class FileGroupInfo {
   final Map<String, dynamic> data;
@@ -245,6 +246,23 @@ class FileTask extends GetStorageMethods {
   set errorMessage(String? value) => data[errorMessageTag] = value;
   static const String errorMessageTag = 'errorMessage';
 
+  /// Metadata extracted from the cached file at the time of cache hit.
+  /// Non-null only when [state] == [FileTaskState.cached].
+  MediaMetadata? get cachedMetadata {
+    final map = data[cachedMetadataTag] as Map<String, dynamic>?;
+    return map != null ? MediaMetadata.fromMap(map) : null;
+  }
+
+  set cachedMetadata(MediaMetadata? value) {
+    if (value != null) {
+      data[cachedMetadataTag] = value.toMap();
+    } else {
+      data.remove(cachedMetadataTag);
+    }
+  }
+
+  static const String cachedMetadataTag = 'cachedMetadata';
+
   /// Get the group information of the task
   FileGroupInfo get group => FileGroupInfo.fromMap(data.getMap(groupTag)!);
   set group(FileGroupInfo value) => data[groupTag] = value.toMap();
@@ -333,6 +351,7 @@ class FileTask extends GetStorageMethods {
     Task? firebaseTask,
     DateTime? createdAt,
     DateTime? lastUpdatedAt,
+    MediaMetadata? cachedMetadata,
   }) : task = firebaseTask,
        data = {
          idTag: id,
@@ -347,6 +366,7 @@ class FileTask extends GetStorageMethods {
          progressTag: progress?.toMap(),
          errorMessageTag: errorMessage,
          groupTag: group.toMap(),
+         if (cachedMetadata != null) cachedMetadataTag: cachedMetadata.toMap(),
        };
 
   /// Create a new upload task
@@ -478,8 +498,9 @@ class FileTask extends GetStorageMethods {
     String? downloadUrl,
     FileGroupInfo? group,
     Task? firebaseTask,
+    MediaMetadata? cachedMetadata,
   }) {
-    return FileTask(
+    final copy = FileTask(
       id: id ?? this.id,
       filePath: filePath ?? this.filePath,
       destinationPath: destinationPath ?? this.destinationPath,
@@ -493,6 +514,8 @@ class FileTask extends GetStorageMethods {
       firebaseTask: firebaseTask ?? this.firebaseTask(justCheck: true),
       group: group ?? this.group,
     );
+    copy.cachedMetadata = cachedMetadata ?? this.cachedMetadata;
+    return copy;
   }
 
   FileTask copy() {

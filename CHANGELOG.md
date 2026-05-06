@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-05-07
+
+### Added
+
+#### Cache Reuse and Local Cache Correctness
+
+- **`cacheKey` support** on `FilePathAndURL` and download APIs — callers can supply a stable key (e.g. storage path) so that signed URLs with rotating query strings still hit the same cache entry
+- **`expiresAt` TTL** on `FilePathAndURL` — cache entries are treated as misses and removed when `expiresAt` is in the past; `clearExpiredCacheEntries()` bulk-purges all expired entries
+- **`lastAccessedAt` timestamp** updated automatically on every cache hit
+- **`createdAt` / `updatedAt` timestamps** stamped on `FilePathAndURL` at creation and on each download completion
+- **`cachedMetadata`** field on `FileTask` — populated from the cache entry on a cache hit so callers receive media metadata without a redundant download
+- **`forceRefresh`** parameter on `downloadTask` / `downloadTaskStream` — bypasses the cache, deletes the existing local file and index entry, and triggers a fresh download; the resulting task state is never `.cached`
+- **`repairStaleCacheEntries()`** on `TransferKit` — scans the index and removes entries whose local file no longer exists; returns the count of entries removed
+- **`clearExpiredCacheEntries()`** on `TransferKit` — deletes local files and removes index entries where `expiresAt` has passed; returns the count of entries removed
+- **`repairStaleEntries()`** / **`clearExpiredEntries()`** on `FilePathAndURLRepository` — lower-level counterparts used internally
+- **`cacheDirectory`** option in `TransferKitConfig.init()` — overrides the local path used for cached files
+
+### Changed
+
+- **Default cache directory** changed from `applicationDocumentsDirectory/cached` to `applicationSupportDirectory/cached` to align with platform conventions for application-managed data
+- **`clearCache(url)`** now removes the index entry from `FilePathAndURLRepository` in addition to deleting the local file, keeping the cache index consistent
+
+### Fixed
+
+- Stale cache entries (local file deleted externally) are now detected on lookup and removed from the index rather than returning a broken path
+
+---
+
 ## [2.1.0] - 2026-01-08
 
 ### Added

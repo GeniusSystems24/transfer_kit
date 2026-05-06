@@ -1174,57 +1174,69 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     required String url,
     required FileGroupInfo group,
     bool autoStart = true,
+    String? cacheKey,
+    bool forceRefresh = false,
   }) async {
-    final existingTask = getDownloadTaskByUrl(url);
-    if (existingTask != null) {
-      return existingTask;
-    }
-
-    var filePathAndUrl = await FilePathAndURLRepository.instance
-        .getCachedDownloadFilePathAndURL(url: url);
-
-    if (filePathAndUrl != null) {
-      final newTask = FileTask.download(
-        id: taskId,
-        downloadUrl: filePathAndUrl.url!,
-        group: group,
-        state: FileTaskState.cached,
-        progress: FileProgress(
-          bytesTransferred: filePathAndUrl.file.lengthSync(),
-          totalBytes: filePathAndUrl.file.lengthSync(),
-        ),
-      );
-
-      addOrUpdate(newTask);
-      return newTask;
+    // forceRefresh: delete existing entry and skip cache lookup entirely
+    if (forceRefresh) {
+      final existing =
+          (cacheKey != null
+              ? FilePathAndURLRepository.instance.getByKey(cacheKey)
+              : null) ??
+          FilePathAndURLRepository.instance.getByUrl(url);
+      if (existing != null) {
+        final file = File(existing.path);
+        if (await file.exists()) await file.delete();
+        FilePathAndURLRepository.instance.remove(existing);
+      }
     } else {
-      final fileTask = FileTaskRepository.instance.getTaskByUrl(url);
-      if (fileTask != null) {
-        return fileTask;
+      final existingTask = getDownloadTaskByUrl(url);
+      if (existingTask != null) return existingTask;
+
+      final filePathAndUrl = await FilePathAndURLRepository.instance
+          .getCachedDownloadFilePathAndURL(url: url, cacheKey: cacheKey);
+
+      if (filePathAndUrl != null) {
+        final file = File(filePathAndUrl.path);
+        final fileSize = file.lengthSync();
+        final newTask = FileTask.download(
+          id: taskId,
+          downloadUrl: filePathAndUrl.url!,
+          group: group,
+          state: FileTaskState.cached,
+          cachedMetadata: filePathAndUrl.metadata,
+          progress: FileProgress(
+            bytesTransferred: fileSize,
+            totalBytes: fileSize,
+          ),
+        );
+        addOrUpdate(newTask);
+        return newTask;
       }
 
-      filePathAndUrl = FilePathAndURL.url(url: url);
-
-      final fileSize =
-          (await FirebaseStorage.instance.refFromURL(url).getMetadata()).size;
-
-      // Create initial waiting task
-      final firebaseTask = FirebaseStorageFactory.createDownload(
-        url,
-        autoStart: autoStart,
-      );
-
-      final newTask = FileTask.download(
-        id: taskId,
-        downloadUrl: filePathAndUrl.url!,
-        state: firebaseTask.snapshot.state.fileTaskState,
-        group: group,
-        progress: FileProgress(bytesTransferred: 0, totalBytes: fileSize ?? 0),
-        firebaseTask: firebaseTask,
-      );
-
-      addOrUpdate(newTask);
-      return newTask;
+      final fileTask = FileTaskRepository.instance.getTaskByUrl(url);
+      if (fileTask != null) return fileTask;
     }
+
+    final filePathAndUrl = FilePathAndURL.url(url: url, cacheKey: cacheKey);
+    final fileSize =
+        (await FirebaseStorage.instance.refFromURL(url).getMetadata()).size;
+
+    final firebaseTask = FirebaseStorageFactory.createDownload(
+      url,
+      autoStart: autoStart,
+    );
+
+    final newTask = FileTask.download(
+      id: taskId,
+      downloadUrl: filePathAndUrl.url!,
+      state: firebaseTask.snapshot.state.fileTaskState,
+      group: group,
+      progress: FileProgress(bytesTransferred: 0, totalBytes: fileSize ?? 0),
+      firebaseTask: firebaseTask,
+    );
+
+    addOrUpdate(newTask);
+    return newTask;
   }
 }

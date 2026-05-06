@@ -162,6 +162,8 @@ class TransferKitConfig {
     int? thumbnailMaxWidth,
     int? thumbnailMaxHeight,
     int? waveformSamplesPerSecond,
+    // Cache directory
+    String? cacheDirectory,
   }) async {
     await GetStorage.init();
     _instance = TransferKitConfig._internal()
@@ -182,10 +184,10 @@ class TransferKitConfig {
       .._autoExtractWaveform = autoExtractWaveform ?? false
       .._thumbnailMaxWidth = thumbnailMaxWidth ?? 200
       .._thumbnailMaxHeight = thumbnailMaxHeight ?? 200
-      .._waveformSamplesPerSecond = waveformSamplesPerSecond ?? 30;
+      .._waveformSamplesPerSecond = waveformSamplesPerSecond ?? 30
+      .._cacheDirectory = cacheDirectory;
 
-    await AppDirectory.init();
-    
+    await AppDirectory.init(cacheDirectory: cacheDirectory);
   }
 
   /// Resets the configuration to default values.
@@ -265,6 +267,11 @@ class TransferKitConfig {
   bool _cacheEnabled = true;
   int _maxCacheSize = 500 * 1024 * 1024; // 500 MB
   Duration _cacheExpiration = const Duration(days: 7);
+  String? _cacheDirectory;
+
+  /// Absolute path to the cache directory. Null means use the default
+  /// (applicationSupportDirectory/cached).
+  String? get cacheDirectory => _cacheDirectory;
 
   /// Whether file caching is enabled.
   ///
@@ -444,6 +451,7 @@ class TransferKitConfig {
       'thumbnailMaxWidth': _thumbnailMaxWidth,
       'thumbnailMaxHeight': _thumbnailMaxHeight,
       'waveformSamplesPerSecond': _waveformSamplesPerSecond,
+      'cacheDirectory': _cacheDirectory,
     };
   }
 

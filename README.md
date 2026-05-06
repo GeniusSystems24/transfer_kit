@@ -373,11 +373,40 @@ final isCached = await fileManager.isFileCached(url);
 // Get cached file path
 final cachedPath = await fileManager.getCachedFilePath(url);
 
-// Clear specific cache
-await fileManager.removeCachedFile(url);
+// Clear a specific URL from cache (removes index entry + local file)
+await fileManager.clearCache(url: url);
 
 // Clear all cache
 await fileManager.clearCache();
+
+// Force a fresh download, ignoring any cached version
+final stream = fileManager.downloadTaskStream(
+  url: url,
+  taskId: 'task-1',
+  group: FileGroupInfo(id: 'grp'),
+  forceRefresh: true,
+);
+
+// Use a stable cache key for signed URLs (rotating query strings)
+final stream2 = fileManager.downloadTaskStream(
+  url: 'https://storage.example.com/file.jpg?token=abc123',
+  taskId: 'task-2',
+  group: FileGroupInfo(id: 'grp'),
+  cacheKey: 'media/file.jpg', // stable identifier
+);
+
+// Access cached media metadata on a cache-hit task
+final task = await fileManager.downloadTask(url: url, taskId: 'task-3', group: FileGroupInfo(id: 'grp'));
+if (task.isCached) {
+  final meta = task.cachedMetadata; // MediaMetadata? — populated without downloading
+  print('MIME: ${meta?.mimeType}, size: ${meta?.fileSize}');
+}
+
+// Remove stale index entries (local file was deleted externally)
+final repairedCount = await fileManager.repairStaleCacheEntries();
+
+// Remove entries whose TTL has expired and delete their local files
+final clearedCount = await fileManager.clearExpiredCacheEntries();
 ```
 
 ---
@@ -402,6 +431,7 @@ The library provides a centralized configuration system for customizing behavior
 | `cacheEnabled` | `bool` | true | Enable file caching |
 | `maxCacheSize` | `int` | 500 MB | Maximum cache size in bytes |
 | `cacheExpiration` | `Duration` | 7 days | How long to keep cached files |
+| `cacheDirectory` | `String?` | null | Override the local directory used for cached files (defaults to `applicationSupportDirectory/cached`) |
 
 #### Metadata Extraction Settings
 

@@ -38,14 +38,14 @@ class AppDirectory {
   /// any file management features.
   ///
   /// Returns the initialized [AppDirectory] instance.
-  static Future<AppDirectory> init() async {
+  static Future<AppDirectory> init({String? cacheDirectory}) async {
     if (isInitialized) return instance;
     instance = AppDirectory._();
     await instance._getApplicationDocumentsDirectory();
     await instance._getApplicationSupportDirectory();
     await instance._getRootDirectory();
     await instance._getTemporaryDirectory();
-    await instance._getCachedDirectory();
+    await instance._getCachedDirectory(overridePath: cacheDirectory);
     await instance._getThumbDirectory();
     isInitialized = true;
     return instance;
@@ -76,12 +76,12 @@ class AppDirectory {
   }
 
   Directory? cachedDir;
-  Future<void> _getCachedDirectory() async {
+  Future<void> _getCachedDirectory({String? overridePath}) async {
     if (cachedDir != null) return;
 
-    cachedDir ??= (Directory(
-      '${(await _getApplicationDocumentsDirectory()).path}/cached',
-    ));
+    final dirPath = overridePath ??
+        '${(await _getApplicationSupportDirectory()).path}/cached';
+    cachedDir = Directory(dirPath);
 
     if (!cachedDir!.existsSync()) {
       cachedDir!.createSync(recursive: true);

@@ -16,11 +16,21 @@ class FilePathAndURL extends GetStorageMethods {
     String? url,
     String? destinationPath,
     MediaMetadata? metadata,
+    String? cacheKey,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? lastAccessedAt,
+    DateTime? expiresAt,
   }) : data = {
           pathTag: path,
           urlTag: url,
           destinationPathTag: destinationPath,
           if (metadata != null) metadataTag: metadata.toMap(),
+          if (cacheKey != null) cacheKeyTag: cacheKey,
+          if (createdAt != null) createdAtTag: createdAt.toIso8601String(),
+          if (updatedAt != null) updatedAtTag: updatedAt.toIso8601String(),
+          if (lastAccessedAt != null) lastAccessedAtTag: lastAccessedAt.toIso8601String(),
+          if (expiresAt != null) expiresAtTag: expiresAt.toIso8601String(),
         };
 
   /// Creates a FilePathAndURL for a local file to be uploaded.
@@ -65,11 +75,17 @@ class FilePathAndURL extends GetStorageMethods {
   ///   ),
   /// );
   /// ```
-  FilePathAndURL.url({required String url, MediaMetadata? metadata})
-      : data = {
-          pathTag: url.toHashName().toCachedPath(),
+  FilePathAndURL.url({
+    required String url,
+    MediaMetadata? metadata,
+    String? cacheKey,
+    DateTime? expiresAt,
+  }) : data = {
+          pathTag: (cacheKey ?? url).toHashName().toCachedPath(),
           urlTag: url,
           if (metadata != null) metadataTag: metadata.toMap(),
+          if (cacheKey != null) cacheKeyTag: cacheKey,
+          if (expiresAt != null) expiresAtTag: expiresAt.toIso8601String(),
         };
 
   FilePathAndURL.fromMap(this.data);
@@ -108,6 +124,35 @@ class FilePathAndURL extends GetStorageMethods {
 
   static const String metadataTag = 'metadata';
 
+  /// Explicit stable cache key used instead of the URL as the hash input.
+  String? get cacheKey => data.getString(cacheKeyTag);
+  set cacheKey(String? value) => data[cacheKeyTag] = value;
+  static const String cacheKeyTag = 'cacheKey';
+
+  /// When this cache entry was first created.
+  DateTime? get createdAt => data.getDateTime(createdAtTag);
+  set createdAt(DateTime? value) =>
+      data[createdAtTag] = value?.toIso8601String();
+  static const String createdAtTag = 'createdAt';
+
+  /// When this cache entry was last updated (download completed or entry modified).
+  DateTime? get updatedAt => data.getDateTime(updatedAtTag);
+  set updatedAt(DateTime? value) =>
+      data[updatedAtTag] = value?.toIso8601String();
+  static const String updatedAtTag = 'updatedAt';
+
+  /// When this cached file was last served to a caller.
+  DateTime? get lastAccessedAt => data.getDateTime(lastAccessedAtTag);
+  set lastAccessedAt(DateTime? value) =>
+      data[lastAccessedAtTag] = value?.toIso8601String();
+  static const String lastAccessedAtTag = 'lastAccessedAt';
+
+  /// Optional expiry; entry is treated as a cache miss after this time.
+  DateTime? get expiresAt => data.getDateTime(expiresAtTag);
+  set expiresAt(DateTime? value) =>
+      data[expiresAtTag] = value?.toIso8601String();
+  static const String expiresAtTag = 'expiresAt';
+
   String get fileName => url?.extractFileName() ?? path.fileName;
 
   File? _file;
@@ -141,12 +186,22 @@ class FilePathAndURL extends GetStorageMethods {
     String? url,
     String? destinationPath,
     MediaMetadata? metadata,
+    String? cacheKey,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? lastAccessedAt,
+    DateTime? expiresAt,
   }) =>
       FilePathAndURL._(
         path: path,
         url: url ?? this.url,
         destinationPath: destinationPath ?? this.destinationPath,
         metadata: metadata ?? this.metadata,
+        cacheKey: cacheKey ?? this.cacheKey,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        lastAccessedAt: lastAccessedAt ?? this.lastAccessedAt,
+        expiresAt: expiresAt ?? this.expiresAt,
       );
 
   /// Creates a copy with merged metadata from another source.
@@ -175,6 +230,11 @@ class FilePathAndURL extends GetStorageMethods {
       url: url,
       destinationPath: destinationPath,
       metadata: metadata?.mergeWith(newMetadata) ?? newMetadata,
+      cacheKey: cacheKey,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      lastAccessedAt: lastAccessedAt,
+      expiresAt: expiresAt,
     );
   }
 
