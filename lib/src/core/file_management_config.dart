@@ -166,6 +166,7 @@ class TransferKitConfig {
     // Cache directory
     String? cacheDirectory,
   }) async {
+    // await GetStorage.init('TransferKit');
     await GetStorage.init();
     _instance = TransferKitConfig._internal()
       .._driver = driver
