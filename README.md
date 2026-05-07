@@ -648,6 +648,150 @@ final base64 = thumbnail?.base64;
 
 ---
 
+## Notifications
+
+TransferKit ships with a configurable notification system for transfer
+lifecycle events. **Notifications are disabled by default** (opt-in) to
+avoid surprising existing apps. Enable them by passing a
+`TransferNotificationConfig` to `TransferKitConfig.init`.
+
+### Quick start
+
+```dart
+await TransferKitConfig.init(
+  driver: HttpDownloadDriver(),
+  notificationConfig: const TransferNotificationConfig(
+    enabled: true,
+    // Defaults: progress on, completion on, errors on,
+    // cancelled/paused/retry off, throttle 1 s, perFile grouping.
+  ),
+);
+
+// Optionally request OS permission at a moment of your choosing.
+await TransferKit.instance.requestNotificationPermission();
+```
+
+### Suppress upload notifications, allow downloads
+
+```dart
+notificationConfig: const TransferNotificationConfig(
+  enabled: true,
+  uploadEnabled: false,
+  downloadEnabled: true,
+),
+```
+
+### Show only completion and error notifications
+
+```dart
+notificationConfig: const TransferNotificationConfig(
+  enabled: true,
+  showProgress: false,
+  showCompletion: true,
+  showErrors: true,
+),
+```
+
+### Custom templates per direction
+
+```dart
+notificationConfig: TransferNotificationConfig(
+  enabled: true,
+  uploadTemplate: const TransferNotificationTemplate(
+    title: 'Sending file…',
+    successText: 'File sent',
+  ),
+  downloadTemplate: const TransferNotificationTemplate(
+    title: 'Receiving file…',
+    successText: 'File ready',
+  ),
+),
+```
+
+Templates also support a `localization` map and a `resolveText(key, payload)`
+callback for full developer control (route through your app's `intl` system,
+emit ICU plurals, etc.).
+
+### Throttle progress updates
+
+```dart
+notificationConfig: const TransferNotificationConfig(
+  enabled: true,
+  throttleDuration: Duration(seconds: 3),
+),
+```
+
+### Group multi-file transfers into one notification
+
+```dart
+notificationConfig: const TransferNotificationConfig(
+  enabled: true,
+  grouping: NotificationGroupingMode.batch,
+),
+```
+
+A 5-file batch upload now produces exactly one grouped notification
+summarising overall progress.
+
+### Replace the built-in adapter
+
+```dart
+class MyAdapter implements TransferNotificationAdapter { /* ... */ }
+
+notificationConfig: TransferNotificationConfig(
+  enabled: true,
+  adapter: MyAdapter(),
+),
+```
+
+The built-in `AwesomeNotificationAdapter` is the default when `adapter` is
+null and `enabled: true`. The `awesome_notifications` import lives in that
+single file — no other part of TransferKit references the package.
+
+### Permission API
+
+```dart
+final status = await TransferKit.instance.checkNotificationPermission();
+// returns granted / denied / restricted / notDetermined.
+// `checkNotificationPermission` never shows a system dialog.
+```
+
+`requestNotificationPermission()` may show a dialog. TransferKit never auto-
+requests permission unless you set `requestPermissionOnInit: true` on the
+config.
+
+### Platform support
+
+| Platform | Behavior                                                          |
+|----------|-------------------------------------------------------------------|
+| Android  | Full support. Channel registered lazily on first notification.    |
+| iOS      | Full support. Permission must be requested before first notif.    |
+| macOS    | Notification methods silently no-op. Permission `notDetermined`.  |
+| Windows  | Notification methods silently no-op. Permission `notDetermined`.  |
+| Linux    | Notification methods silently no-op. Permission `notDetermined`.  |
+| Web      | Notification methods silently no-op. Permission `notDetermined`.  |
+
+### Migration from previous versions
+
+Earlier releases rendered notifications automatically through
+`BackgroundTransferService`. That coupling has been removed — to restore the
+old behavior, opt in:
+
+```dart
+await TransferKitConfig.init(
+  driver: HttpDownloadDriver(),
+  notificationConfig: const TransferNotificationConfig(enabled: true),
+);
+```
+
+### Testing with `FakeNotificationAdapter`
+
+Use `FakeNotificationAdapter` (in `test/src/notification/fake/`) as a hand-
+written test double — every adapter call is recorded with method name,
+payload, and timestamp.
+
+---
+
 ## Exception Classes
 
 The library provides typed exceptions for better error handling:

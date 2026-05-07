@@ -99,3 +99,15 @@ export 'src/widget/download_file_widget.dart';
 
 // Media Widgets (download image/video/document with progress)
 export 'src/media_widgets/media_widgets.dart';
+
+// Notifications (opt-in; disabled by default per FR-001)
+export 'src/notification/config/transfer_notification_config.dart';
+export 'src/notification/config/transfer_notification_template.dart';
+export 'src/notification/model/transfer_notification_action.dart';
+export 'src/notification/model/transfer_notification_payload.dart';
+export 'src/notification/model/notification_event_kind.dart';
+export 'src/notification/model/notification_grouping_mode.dart';
+export 'src/notification/model/notification_permission_status.dart';
+export 'src/notification/model/transfer_type.dart';
+export 'src/notification/adapter/transfer_notification_adapter.dart';
+export 'src/notification/adapter/awesome_notification_adapter.dart';

@@ -1,4 +1,5 @@
 import '../../transfer_kit.dart';
+import '../notification/coordinator/transfer_notification_coordinator.dart';
 
 /// Configuration class for the File Management System.
 ///
@@ -165,6 +166,8 @@ class TransferKitConfig {
     int? waveformSamplesPerSecond,
     // Cache directory
     String? cacheDirectory,
+    // Notifications (opt-in; defaults to disabled)
+    TransferNotificationConfig? notificationConfig,
   }) async {
     // await GetStorage.init('TransferKit');
     await GetStorage.init();
@@ -190,9 +193,12 @@ class TransferKitConfig {
       .._thumbnailMaxWidth = thumbnailMaxWidth ?? 200
       .._thumbnailMaxHeight = thumbnailMaxHeight ?? 200
       .._waveformSamplesPerSecond = waveformSamplesPerSecond ?? 30
-      .._cacheDirectory = cacheDirectory;
+      .._cacheDirectory = cacheDirectory
+      .._notificationConfig =
+          notificationConfig ?? TransferNotificationConfig.disabled();
 
     await AppDirectory.init(cacheDirectory: cacheDirectory);
+    _instance!._startNotificationCoordinatorIfEnabled();
   }
 
   /// Resets the configuration to default values.
@@ -441,6 +447,57 @@ class TransferKitConfig {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // NOTIFICATION SETTINGS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  TransferNotificationConfig _notificationConfig =
+      TransferNotificationConfig.disabled();
+
+  /// Notification configuration (defaults to disabled — opt-in per FR-001).
+  TransferNotificationConfig get notificationConfig => _notificationConfig;
+
+  /// Replaces the notification configuration at runtime. The coordinator is
+  /// torn down and rebuilt to honor the new flags.
+  void setNotificationConfig(TransferNotificationConfig config) {
+    _notificationConfig = config;
+    // Tear down any existing coordinator so the next start uses the fresh
+    // config / adapter.
+    final existing = _notificationCoordinator;
+    _notificationCoordinator = null;
+    if (existing != null) {
+      // Fire-and-forget; dispose() is silent (FR-014).
+      // ignore: discarded_futures
+      existing.dispose();
+    }
+    _startNotificationCoordinatorIfEnabled();
+  }
+
+  TransferNotificationCoordinator? _notificationCoordinator;
+
+  /// Internal accessor used by `TransferKit` to expose permission helpers.
+  /// Returns null when notifications are disabled or have not been started.
+  TransferNotificationCoordinator? get notificationCoordinator =>
+      _notificationCoordinator;
+
+  void _startNotificationCoordinatorIfEnabled() {
+    if (!_notificationConfig.enabled) return;
+    final adapter = _notificationConfig.adapter ?? AwesomeNotificationAdapter();
+    final coordinator = TransferNotificationCoordinator(
+      config: _notificationConfig,
+      adapter: adapter,
+      taskStream: FileTaskRepository.instance.stream,
+    );
+    coordinator.start();
+    _notificationCoordinator = coordinator;
+    if (_notificationConfig.requestPermissionOnInit) {
+      // Explicit opt-in (FR-013). Fire-and-forget; result handed to consumers
+      // via TransferKit.instance.checkNotificationPermission() later.
+      // ignore: discarded_futures
+      adapter.requestPermission();
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // DEBUG INFO
   // ═══════════════════════════════════════════════════════════════════════════
 
@@ -468,6 +525,7 @@ class TransferKitConfig {
       'thumbnailMaxHeight': _thumbnailMaxHeight,
       'waveformSamplesPerSecond': _waveformSamplesPerSecond,
       'cacheDirectory': _cacheDirectory,
+      'notificationConfig': _notificationConfig.toDebugMap(),
     };
   }
 

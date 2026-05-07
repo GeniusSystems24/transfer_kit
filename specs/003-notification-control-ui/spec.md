@@ -5,6 +5,16 @@
 **Status**: Draft
 **Input**: User description: "Improve TransferKit notification control and notification UI/design for file transfer tasks."
 
+## Clarifications
+
+### Session 2026-05-07
+
+- Q: Should TransferKit notifications be enabled by default (opt-out) or disabled by default (opt-in)? → A: Disabled by default — notifications are inert until the developer explicitly sets `enableNotifications: true`.
+- Q: Does TransferKit ship with a built-in default adapter or must developers always provide their own? → A: Ships with an optional built-in adapter that works out of the box; developers can replace it by supplying a custom adapter implementation.
+- Q: Which platforms must the notification system support in v1? → A: Android and iOS are required; all other platforms (macOS, Windows, Linux, Web) silently skip notifications without error or exception.
+- Q: What should the default `notificationThrottleDuration` be when not explicitly configured? → A: 1 second (1000 ms).
+- Q: Should notification actions (Pause, Cancel, Retry buttons) be required in v1 or deferred? → A: The actions interface is declared in v1 (field on template and adapter); the built-in adapter is not required to implement them. Custom adapters may implement actions at their discretion.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Disable All Notifications (Priority: P1)
@@ -129,6 +139,7 @@ A developer wants TransferKit to check whether notification permissions have bee
 - What happens when both per-type and global flags conflict (e.g., `enableNotifications: false` but `enableUploadNotifications: true`)? The global flag takes precedence.
 - What happens if a developer provides a partial custom template? Missing fields fall back to default text.
 - What happens during a batch transfer where individual files complete at different times? The group notification updates to reflect overall progress.
+- What happens when TransferKit runs on an unsupported platform (macOS, Windows, Linux, Web)? All notification calls silently no-op — transfers proceed normally and no exception is raised.
 
 ---
 
@@ -136,26 +147,28 @@ A developer wants TransferKit to check whether notification permissions have bee
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST provide a global `enableNotifications` flag that, when false, suppresses all notifications regardless of any other configuration.
+- **FR-001**: The system MUST provide a global `enableNotifications` flag that defaults to `false` (opt-in model); when false, all notifications are suppressed regardless of any other configuration. Developers must explicitly set `enableNotifications: true` to activate the notification system.
 - **FR-002**: The system MUST provide `enableUploadNotifications` and `enableDownloadNotifications` flags that independently control notifications for each transfer type.
 - **FR-003**: The system MUST provide per-lifecycle flags: `showProgressNotifications`, `showCompletionNotifications`, `showErrorNotifications`, `showCancelledNotifications`, `showPausedNotifications`, `showRetryNotifications`.
-- **FR-004**: The system MUST support a `notificationThrottleDuration` that prevents more than one progress notification update within the specified time window for the same task.
+- **FR-004**: The system MUST support a `notificationThrottleDuration` that prevents more than one progress notification update within the specified time window for the same task. The default value when not explicitly configured MUST be 1000 ms (1 second).
 - **FR-005**: The system MUST update an existing notification record instead of creating a new one when a progress event arrives for an already-notified task.
 - **FR-006**: The system MUST support a `notificationGrouping` configuration with at least three modes: `perFile` (one notification per task), `batch` (one grouped notification for all tasks in a batch), and `none` (no notifications).
 - **FR-007**: The system MUST reflect each task lifecycle state in notifications: `waiting`, `running`, `paused`, `completed`, `cached`, `error`, `cancelled`, `retrying`.
 - **FR-008**: The system MUST allow developers to supply a notification template that customizes title, body, progress text, success text, failure text, and grouped notification title independently for uploads and downloads.
 - **FR-009**: The system MUST support localization strings within the notification template so developers can provide translated text.
-- **FR-010**: Notification logic MUST be isolated behind an adapter interface so the underlying notification provider can be replaced without changing transfer or configuration code.
+- **FR-010**: Notification logic MUST be isolated behind an adapter interface so the underlying notification provider can be replaced without changing transfer or configuration code. TransferKit MUST ship with one built-in default adapter that requires no additional developer setup; developers MAY replace it by registering a custom adapter implementation at initialization time.
 - **FR-011**: The system MUST expose a permission-check API that returns the current notification permission status without triggering a system dialog.
 - **FR-012**: The system MUST expose a permission-request API that developers can call at a time of their choosing to request notification permissions.
 - **FR-013**: The system MUST NOT request notification permissions automatically unless explicitly configured to do so.
 - **FR-014**: A notification failure (e.g., provider error) MUST NOT interrupt or fail the underlying transfer operation.
 - **FR-015**: The global `enableNotifications: false` flag MUST take precedence over all per-type and per-lifecycle flags.
+- **FR-017**: The `NotificationTemplate` and `NotificationAdapter` interface MUST declare an optional `actions` field (e.g., Pause, Cancel, Retry) in v1. The built-in default adapter is NOT required to render these actions. Custom adapter implementations MAY support them at their discretion. The actions field MUST be ignored gracefully when unsupported.
+- **FR-016**: The notification system MUST support Android and iOS. On all other platforms (macOS, Windows, Linux, Web), every notification call MUST silently no-op — no exception is thrown and no error is logged at warning level or above. Platform support limitations MUST be documented in README.
 
 ### Key Entities
 
 - **NotificationConfig**: Holds all notification control flags, throttle duration, grouping mode, and the active template. Attached to the existing `FileManagementConfig`.
-- **NotificationTemplate**: Carries customizable text fields (title, body, progress text, success text, failure text, grouped title, localization strings) with separate instances per transfer direction.
+- **NotificationTemplate**: Carries customizable text fields (title, body, progress text, success text, failure text, grouped title, localization strings) and an optional `actions` list (Pause, Cancel, Retry), with separate instances per transfer direction. Missing fields fall back to built-in defaults.
 - **NotificationAdapter**: Interface that notification providers implement; receives a `NotificationPayload` and is responsible for display, update, and dismissal.
 - **NotificationPayload**: Represents a single notification event carrying task ID, task state, progress percentage, and resolved display strings.
 - **NotificationPermissionStatus**: Enum with values `granted`, `denied`, `restricted`, `notDetermined`.
@@ -167,10 +180,10 @@ A developer wants TransferKit to check whether notification permissions have bee
 
 ### Measurable Outcomes
 
-- **SC-001**: A developer can silence all TransferKit notifications by changing a single configuration value — no other code changes required.
-- **SC-002**: A transfer that emits progress events more frequently than the configured throttle interval produces no more than one notification update per throttle window per task.
+- **SC-001**: TransferKit emits zero notifications when used without any configuration changes (opt-in default). A developer can activate notifications by setting a single configuration value — no other code changes required.
+- **SC-002**: A transfer that emits progress events more frequently than the configured throttle interval (default: 1000 ms) produces no more than one notification update per throttle window per task.
 - **SC-003**: A batch of 10 simultaneous transfers with `notificationGrouping: batch` produces exactly one active notification (not 10) in the notification tray throughout the batch.
-- **SC-004**: A developer can swap the notification provider (from one package to another) by implementing one adapter interface without modifying any transfer, repository, or configuration code.
+- **SC-004**: A developer can swap the notification provider (from the built-in adapter to any custom implementation) by implementing one adapter interface and registering it at initialization — without modifying any transfer, repository, or configuration code.
 - **SC-005**: 100% of notification configuration options are expressed through `FileManagementConfig` — no notification behavior is hard-coded outside configuration.
 - **SC-006**: Automated tests using a fake notification adapter achieve full branch coverage of notification decision logic (enable/disable, throttle, lifecycle state transitions, grouping modes).
 - **SC-007**: The permission-check API returns a status value in under 100 ms without presenting a system dialog.
@@ -180,12 +193,12 @@ A developer wants TransferKit to check whether notification permissions have bee
 
 ## Assumptions
 
-- Notification display capability is provided by a package already present in the host application; TransferKit's adapter interface will wrap it.
+- TransferKit ships with one built-in default notification adapter so notifications work without any developer setup. Developers who need a different notification library or custom behavior may replace it by providing their own adapter at initialization time. The built-in adapter is isolated — it does not affect the core transfer or configuration code.
 - The existing `FileManagementConfig` initialization pattern (singleton, `init()` method) will be extended — no new top-level entry point is needed.
 - Grouped batch notifications use a developer-supplied or auto-generated batch ID to correlate tasks; TransferKit does not manage batch grouping at the transfer-scheduling level.
-- Platform permission APIs differ per platform; the permission helper exposes a unified API that delegates to the adapter, which handles platform-specific behavior.
+- The notification system targets Android and iOS in v1. On all other platforms the adapter's notification calls are no-ops. The permission-check and permission-request APIs return `notDetermined` on unsupported platforms without triggering any dialog.
 - Compact and expanded notification content (e.g., Android BigPicture, iOS rich notifications) are considered optional adapter capabilities; the core template covers text fields only.
-- Notification actions (e.g., "Pause", "Cancel" buttons in the notification) are defined as optional adapter capabilities and are out of scope for the core template but may be declared in the template for adapters that support them.
+- Notification actions (Pause, Cancel, Retry) are declared as an optional field in the `NotificationTemplate` and `NotificationAdapter` interface in v1. The built-in adapter does not implement them; custom adapters may. Actions are silently ignored when unsupported.
 - The `cached` task state produces no notification by default; an optional `showCacheHitNotifications` flag may be added but is not mandatory for the initial implementation.
 - Localization strings in the template are keyed maps supplied by the developer; TransferKit does not ship built-in translations.
 - The README and CHANGELOG updates are in scope and will be delivered alongside the implementation.

@@ -5,6 +5,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Breaking Changes
+
+- **Notifications are now opt-in**: TransferKit no longer renders notifications
+  automatically. The previous always-on `BackgroundTransferService`-driven
+  notifications have been removed. To restore notifications, pass a
+  `TransferNotificationConfig(enabled: true)` to `TransferKitConfig.init()`.
+- **`BackgroundTransferService`**: removed direct `awesome_notifications`
+  coupling, channel constants (`notificationChannelKey`,
+  `notificationChannelName`, `notificationChannelDescription`,
+  `channel()`), notification ID range constants, and the private rendering
+  helpers (`_createOrUpdateNotification`, `_createOrUpdateBatchNotification`,
+  `_getProgressNotificationId`, `_getSuccessNotificationId`,
+  `_getFailureNotificationId`). The service now only manages background
+  scheduling; rendering is delegated to the new notification surface.
+
+### Added — Notification Control & UI
+
+- `TransferNotificationConfig` — central, immutable notification configuration.
+  Master `enabled` switch, per-direction (`uploadEnabled`, `downloadEnabled`),
+  per-state (`showProgress`, `showCompletion`, `showErrors`, `showCancelled`,
+  `showPaused`, `showRetry`), `throttleDuration` (default 1 s),
+  `grouping` (`perFile` / `batch` / `none`), `requestPermissionOnInit`, and
+  optional custom `adapter`.
+- `TransferNotificationTemplate` — customizable text, icons, and channel for
+  each direction. Supports a `localization` map and a `resolveText(key,
+  payload)` callback for full developer control.
+- `TransferNotificationAdapter` — public abstraction interface so any
+  notification SDK (or none) can be wired in. Mirrors the `TransferDriver`
+  pattern (Principle VI).
+- `AwesomeNotificationAdapter` — built-in default adapter. Lazy channel
+  registration; silent no-op on macOS / Windows / Linux / Web.
+- `TransferNotificationPayload`, `NotificationGroupingMode`,
+  `NotificationPermissionStatus`, `NotificationEventKind`, `TransferType`,
+  `TransferNotificationAction` — supporting public types.
+- `TransferKit.instance.checkNotificationPermission()` and
+  `requestNotificationPermission()` — opt-in permission helpers (FR-013).
+- `FakeNotificationAdapter` (in `test/src/notification/fake/`) — canonical
+  test double recording every adapter call for assertions.
+- `TransferKitConfig.notificationConfig` getter and
+  `setNotificationConfig(...)` runtime mutator.
+- New tests under `test/src/notification/` covering policy, coordinator,
+  throttle, batch grouping, fake adapter, resilience (FR-014), and
+  permission semantics (SC-007).
+
+### Migration
+
+If your app relied on the old implicit notifications, add to
+`TransferKitConfig.init`:
+
+```dart
+await TransferKitConfig.init(
+  driver: HttpDownloadDriver(),
+  notificationConfig: const TransferNotificationConfig(
+    enabled: true,
+  ),
+);
+```
+
+To stay silent (the new default), omit `notificationConfig` entirely.
+
 ## [3.0.0] - 2026-05-07
 
 ### Breaking Changes

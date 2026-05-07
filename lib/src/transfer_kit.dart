@@ -4,11 +4,13 @@ import 'dart:io';
 import 'package:uuid/uuid.dart';
 
 import 'core/extension/file_path_extension.dart';
+import 'core/file_management_config.dart';
 import 'model/file_exception.dart';
 import 'model/file_path_and_url.dart';
 import 'model/file_task.dart';
 import 'model/multi_download_file_task.dart';
 import 'model/multi_upload_file_task.dart';
+import 'notification/model/notification_permission_status.dart';
 import 'repository/file_path_and_url_repository.dart';
 import 'repository/file_task_repository.dart';
 import 'service/task_management_service.dart';
@@ -401,6 +403,30 @@ class TransferKit {
       autoStart: autoStart,
       group: group,
     );
+  }
+
+  /// Returns the current notification permission status without showing a
+  /// system dialog. Returns [NotificationPermissionStatus.notDetermined] when
+  /// notifications are disabled or running on an unsupported platform
+  /// (FR-011 / SC-007).
+  Future<NotificationPermissionStatus> checkNotificationPermission() async {
+    final coordinator = TransferKitConfig.instance.notificationCoordinator;
+    if (coordinator == null) {
+      return NotificationPermissionStatus.notDetermined;
+    }
+    return coordinator.adapter.checkPermission();
+  }
+
+  /// Requests notification permission from the user (may show a system
+  /// dialog). Returns [NotificationPermissionStatus.notDetermined] when
+  /// notifications are disabled or running on an unsupported platform
+  /// (FR-012).
+  Future<NotificationPermissionStatus> requestNotificationPermission() async {
+    final coordinator = TransferKitConfig.instance.notificationCoordinator;
+    if (coordinator == null) {
+      return NotificationPermissionStatus.notDetermined;
+    }
+    return coordinator.adapter.requestPermission();
   }
 
   /// Downloads multiple files in parallel (Future version)
