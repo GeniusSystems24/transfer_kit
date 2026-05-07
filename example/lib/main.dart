@@ -16,7 +16,7 @@ void main() async {
 
   // Enable all settings for TransferKit
   await TransferKitConfig.init(
-    driver: LocalFileCopyDriver(),
+    driver: HttpDownloadDriver(),
     maxConcurrentDownloads: 5,
     maxConcurrentUploads: 3,
     streamCleanupDelay: const Duration(seconds: 3),
