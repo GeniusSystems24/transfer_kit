@@ -10,7 +10,7 @@ import 'model/file_task.dart';
 import 'model/multi_download_file_task.dart';
 import 'model/multi_upload_file_task.dart';
 import 'repository/file_path_and_url_repository.dart';
-import 'repository/firebase_file_repository.dart';
+import 'repository/file_task_repository.dart';
 import 'service/task_management_service.dart';
 
 extension CachedFileFromUrl on String {
@@ -34,7 +34,7 @@ class TransferKit {
   TransferKit._internal();
 
   /// The repository instance used for file operations
-  final FirebaseFileRepository repository = FirebaseFileRepository();
+  FileTaskRepository get repository => FileTaskRepository.instance;
 
   /// Task management service instance
   final TaskManagementService taskService = TaskManagementService.instance;
@@ -123,9 +123,6 @@ class TransferKit {
   Future<void> clearCompletedTasks() async => taskService.clearCompletedTasks();
 
   /// Checks if a file has been cached for the given URL
-  ///
-  /// [url] The Firebase Storage URL of the file
-  /// Returns a [Future<bool>] indicating whether the file is cached
   Future<bool> isFileCached(String url) async {
     final entry = FilePathAndURLRepository.instance.getByUrl(url);
     if (entry != null) return File(entry.path).exists();
@@ -133,9 +130,6 @@ class TransferKit {
   }
 
   /// Gets the cached file path for the given URL
-  ///
-  /// [url] The Firebase Storage URL of the file
-  /// Returns a [Future<String?>] containing the local file path if cached, null otherwise
   Future<String?> getCachedFilePath(String url) async {
     final entry = FilePathAndURLRepository.instance.getByUrl(url);
     final filePath = entry?.path ?? url.toHashName().toCachedPath();
@@ -145,8 +139,6 @@ class TransferKit {
   }
 
   /// Clears the cached file for the given URL and removes its index entry.
-  ///
-  /// - [url] The URL of the file to clear from cache
   Future<void> clearCache(String url) async {
     final entry = FilePathAndURLRepository.instance.getByUrl(url);
     if (entry != null) {
@@ -154,15 +146,12 @@ class TransferKit {
       if (await file.exists()) await file.delete();
       FilePathAndURLRepository.instance.remove(entry);
     } else {
-      // Fallback: hash-based deletion for backward compatibility
       final file = File(url.toHashName().toCachedPath());
       if (await file.exists()) await file.delete();
     }
   }
 
   /// Clears cached files for the given URLs and removes their index entries.
-  ///
-  /// - [urls] The URLs of the files to clear from cache
   Future<void> clearCacheForUrls(Set<String> urls) async {
     for (final url in urls) {
       await clearCache(url);
@@ -170,12 +159,12 @@ class TransferKit {
   }
 
   /// Deletes local files and removes index entries where [expiresAt] has passed.
-  /// Returns the number of entries removed. No remote operations.
+  /// Returns the number of entries removed.
   Future<int> clearExpiredCacheEntries() =>
       FilePathAndURLRepository.instance.clearExpiredEntries();
 
   /// Removes index entries where the local file no longer exists on disk.
-  /// Returns the count of stale entries repaired. No remote operations.
+  /// Returns the count of stale entries repaired.
   Future<int> repairStaleCacheEntries() =>
       FilePathAndURLRepository.instance.repairStaleEntries();
 
@@ -187,13 +176,6 @@ class TransferKit {
   Set<String> getAllGroupIds() => taskService.getAllGroupIds();
 
   /// Create a new upload task
-  ///
-  /// - [filePathAndUrl] The path to the file to upload
-  /// - [autoStart] Whether to start the upload immediately
-  /// - [taskId] Optional identifier for the task
-  /// - [group] Optional group information for batch operations
-  ///
-  /// Returns a future [FileTask] containing the created upload task
   Future<FileTask> createUploadTask({
     required FilePathAndURL filePathAndUrl,
     required String taskId,
@@ -201,20 +183,14 @@ class TransferKit {
     bool autoStart = true,
   }) =>
       repository.createUploadTask(
-        filePathAndUrl: filePathAndUrl,
-        autoStart: autoStart,
         taskId: taskId,
+        filePath: filePathAndUrl.path,
+        destinationPath: filePathAndUrl.destinationPath ?? '',
         group: group,
+        autoStart: autoStart,
       );
 
-  /// Streams a file upload to Firebase Storage with progress updates
-  ///
-  /// - [filePathAndUrl] The file path and destination path to upload
-  /// - [autoStart] Whether to start the upload immediately
-  /// - [taskId] Optional identifier for the task
-  /// - [group] Optional group information for batch operations
-  ///
-  /// Returns a [Stream<FileTask>] that emits progress updates during upload
+  /// Streams a file upload with progress updates
   Stream<FileTask> uploadTaskStream({
     required FilePathAndURL filePathAndUrl,
     bool autoStart = true,
@@ -226,10 +202,7 @@ class TransferKit {
     late final StreamController<FileTask> controller;
     controller = StreamController<FileTask>(
       onCancel: () {
-        // Ensure controller is closed when stream is cancelled
-        if (!controller.isClosed) {
-          controller.close();
-        }
+        if (!controller.isClosed) controller.close();
       },
     );
 
@@ -240,9 +213,7 @@ class TransferKit {
       group: group,
     ).catchError((error) {
       if (!controller.isClosed) {
-        controller.addError(
-          FileUploadException('Failed to stream upload: $error'),
-        );
+        controller.addError(FileUploadException('Failed to stream upload: $error'));
         controller.close();
       }
     });
@@ -259,30 +230,19 @@ class TransferKit {
   }) async {
     try {
       final task = await repository.createUploadTask(
-        filePathAndUrl: filePathAndUrl,
         taskId: taskId,
+        filePath: filePathAndUrl.path,
+        destinationPath: filePathAndUrl.destinationPath ?? '',
         group: group,
         autoStart: autoStart,
       );
-
-      // Stream the upload with progress updates
       repository.uploadTaskStream(task: task, controller: controller);
     } catch (e) {
       throw FileUploadException('Failed to check and stream upload: $e');
     }
   }
 
-  /// Uploads a single file with built-in deduplication (Future version)
-  ///
-  /// The method automatically checks for existing tasks with the same file to avoid duplicates.
-  /// If a matching task is found, it will be returned instead of creating a new one.
-  ///
-  /// - [filePathAndUrl] FilePathAndURL object containing file path and optional destination path
-  /// - [autoStart] Whether to start the upload immediately
-  /// - [taskId] Optional identifier for the task
-  /// - [group] Optional group information for batch operations
-  ///
-  /// Returns a future with the created or existing task
+  /// Uploads a single file (Future version)
   Future<FileTask> uploadTask({
     required FilePathAndURL filePathAndUrl,
     required String taskId,
@@ -290,7 +250,6 @@ class TransferKit {
     FileGroupInfo? group,
   }) async {
     group ??= FileGroupInfo(id: const Uuid().v4());
-
     return await uploadTaskStream(
       filePathAndUrl: filePathAndUrl,
       taskId: taskId,
@@ -299,19 +258,12 @@ class TransferKit {
     ).last;
   }
 
-  /// Uploads multiple files in parallel to Firebase Storage with progress updates
-  ///
-  /// - [filePathsAndUrls] Set of file paths and URLs to upload
-  /// - [autoStart] Whether to start the upload immediately
-  /// - [group] Optional group information for batch operations
-  ///
-  /// Returns a stream of [MultiUploadFileTask] that emits progress updates during uploads
+  /// Uploads multiple files in parallel with progress updates
   Stream<MultiUploadFileTask> uploadTasksParallelStream({
     required Set<FilePathAndURL> filePathsAndUrls,
     FileGroupInfo? group,
     bool autoStart = true,
   }) {
-    // Generate a group ID for this batch
     group ??= FileGroupInfo(id: const Uuid().v4());
 
     if (filePathsAndUrls.isEmpty) {
@@ -320,7 +272,6 @@ class TransferKit {
       );
     }
 
-    // Return the progress stream
     return repository.uploadTasksParallelStream(
       filePathsAndUrls: filePathsAndUrls,
       autoStart: autoStart,
@@ -328,21 +279,13 @@ class TransferKit {
     );
   }
 
-  /// Uploads multiple files in parallel to Firebase Storage with progress updates
-  ///
-  /// - [filePathsAndUrls] Set of file paths and URLs to upload
-  /// - [autoStart] Whether to start the upload immediately
-  /// - [group] Optional group information for batch operations
-  ///
-  /// Returns a [MultiUploadFileTask] that emits progress updates during uploads
+  /// Uploads multiple files in parallel (Future version)
   Future<MultiUploadFileTask> uploadTasksParallel({
     required Set<FilePathAndURL> filePathsAndUrls,
     FileGroupInfo? group,
     bool autoStart = true,
   }) async {
-    // Generate a group for this batch
     group ??= FileGroupInfo(id: const Uuid().v4());
-
     return await uploadTasksParallelStream(
       filePathsAndUrls: filePathsAndUrls,
       group: group,
@@ -351,13 +294,6 @@ class TransferKit {
   }
 
   /// Create a new download task
-  ///
-  /// - [filePathAndUrl] The FilePathAndURL object containing the file to download
-  /// - [autoStart] Whether to start the download immediately
-  /// - [taskId] Optional identifier for the task
-  /// - [group] Optional group information for batch operations
-  ///
-  /// Returns a future [FileTask] containing the created download task
   Future<FileTask> createDownloadTask({
     required FilePathAndURL filePathAndUrl,
     required String taskId,
@@ -365,20 +301,13 @@ class TransferKit {
     bool autoStart = true,
   }) =>
       repository.createDownloadTask(
-        filePathAndUrl: filePathAndUrl,
-        autoStart: autoStart,
         taskId: taskId,
+        url: filePathAndUrl.url!,
         group: group,
+        autoStart: autoStart,
       );
 
-  /// Streams a file from cache or downloads it if not cached, with progress updates
-  ///
-  /// - [filePathAndUrl] The FilePathAndURL object containing the file to download
-  /// - [autoStart] Whether to start the download immediately
-  /// - [taskId] Optional identifier for the task
-  /// - [group] Optional group information for batch operations
-  ///
-  /// Returns a [Stream<FileTask>] that emits progress updates during download
+  /// Streams a file from cache or downloads it, with progress updates
   Stream<FileTask> downloadTaskStream({
     required FilePathAndURL filePathAndUrl,
     bool autoStart = true,
@@ -391,10 +320,7 @@ class TransferKit {
     late final StreamController<FileTask> controller;
     controller = StreamController<FileTask>(
       onCancel: () {
-        // Ensure controller is closed when stream is cancelled
-        if (!controller.isClosed) {
-          controller.close();
-        }
+        if (!controller.isClosed) controller.close();
       },
     );
 
@@ -426,31 +352,19 @@ class TransferKit {
   }) async {
     try {
       final task = await repository.createDownloadTask(
-        filePathAndUrl: filePathAndUrl,
         taskId: taskId,
+        url: filePathAndUrl.url!,
         group: group,
         autoStart: autoStart,
         forceRefresh: forceRefresh,
       );
-
-      // Stream the download with progress updates
       repository.downloadTaskStream(task: task, controller: controller);
     } catch (e) {
       throw FileDownloadException('Failed to check and stream download: $e');
     }
   }
 
-  /// Downloads a single file with built-in deduplication (Future version)
-  ///
-  /// The method automatically checks for existing tasks with the same file to avoid duplicates.
-  /// If a matching task is found, it will be returned instead of creating a new one.
-  ///
-  /// - [filePathAndUrl] FilePathAndURL object containing file path and optional destination path
-  /// - [autoStart] Whether to start the download immediately
-  /// - [taskId] Optional identifier for the task
-  /// - [group] Optional group information for batch operations
-  ///
-  /// Returns a future with the created or existing task
+  /// Downloads a single file (Future version)
   Future<FileTask> downloadTask({
     required FilePathAndURL filePathAndUrl,
     required String taskId,
@@ -459,7 +373,6 @@ class TransferKit {
     bool forceRefresh = false,
   }) async {
     group ??= FileGroupInfo(id: const Uuid().v4());
-
     return await downloadTaskStream(
       filePathAndUrl: filePathAndUrl,
       taskId: taskId,
@@ -470,18 +383,11 @@ class TransferKit {
   }
 
   /// Downloads multiple files in parallel with progress updates
-  ///
-  /// - [filePathsAndUrls] Set of file paths and URLs to download
-  /// - [autoStart] Whether to start the download immediately.
-  /// - [group] Optional group for batch operations.
-  ///
-  /// Returns a [Stream<MultiDownloadTask>] that emits progress updates during downloads
   Stream<MultiDownloadFileTask> downloadTasksParallelStream({
     required Set<FilePathAndURL> filePathsAndUrls,
     FileGroupInfo? group,
     bool autoStart = true,
   }) {
-    // Generate a group ID for this batch
     group ??= FileGroupInfo(id: const Uuid().v4());
 
     if (filePathsAndUrls.isEmpty) {
@@ -497,24 +403,13 @@ class TransferKit {
     );
   }
 
-  /// 6. Downloads multiple files in parallel with built-in deduplication (Future version)
-  ///
-  /// The order of tasks in the returned list is not guaranteed due to parallel processing.
-  /// The method automatically checks for existing tasks with the same files to avoid duplicates.
-  ///
-  /// - [filePathsAndUrls] List of FilePathAndURL objects to download
-  /// - [autoStart] Whether to start downloads immediately
-  /// - [group] Optional group information for batch operations
-  ///
-  /// Returns a future with list of created or existing tasks
+  /// Downloads multiple files in parallel (Future version)
   Future<MultiDownloadFileTask> downloadTasksParallel({
     required Set<FilePathAndURL> filePathsAndUrls,
     FileGroupInfo? group,
     bool autoStart = true,
   }) async {
-    // Generate a group for this batch
     group ??= FileGroupInfo(id: const Uuid().v4());
-
     return await downloadTasksParallelStream(
       filePathsAndUrls: filePathsAndUrls,
       group: group,

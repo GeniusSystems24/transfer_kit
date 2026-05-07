@@ -1,12 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'string_extension.dart';
-import 'date_time_extension.dart';
 import 'dynamic_extension.dart';
-import 'geo_point_extension.dart';
 
 /// Extension for comparing maps.
 extension MapExtension<Key extends dynamic, Value extends dynamic>
@@ -23,7 +19,7 @@ extension MapExtension<Key extends dynamic, Value extends dynamic>
 /// Extension methods for type-safe Map access and conversion.
 ///
 /// Provides safe getters for common data types from dynamic maps,
-/// particularly useful when working with Firestore documents or JSON data.
+/// particularly useful when working with JSON data.
 ///
 /// ## Usage
 /// ```dart
@@ -31,19 +27,16 @@ extension MapExtension<Key extends dynamic, Value extends dynamic>
 ///   'name': 'John',
 ///   'age': 30,
 ///   'isAdmin': true,
-///   'createdAt': Timestamp.now(),
 /// };
 ///
 /// print(data.getString('name')); // 'John'
 /// print(data.getInt('age')); // 30
 /// print(data.getBool('isAdmin')); // true
-/// print(data.getDateTime('createdAt')); // DateTime instance
 /// ```
 extension MapStringDynamicExtension on Map<String, dynamic> {
   /// Converts the map to JSON-safe format.
   ///
-  /// Converts Firestore-specific types (Timestamp, GeoPoint) to
-  /// JSON-compatible formats.
+  /// Converts DateTime values to ISO 8601 strings.
   Map<String, dynamic> mapCanConvertToJson() {
     return {
       for (var entry in entries)
@@ -58,39 +51,8 @@ extension MapStringDynamicExtension on Map<String, dynamic> {
                         e is Map<String, dynamic> ? e.mapCanConvertToJson() : e,
                   )
                   .toList()
-        else if (entry.value is Timestamp)
-          entry.key: (entry.value as Timestamp).toDate().toIso8601String()
         else if (entry.value is DateTime)
           entry.key: (entry.value as DateTime).toIso8601String()
-        else if (entry.value is GeoPoint)
-          entry.key: (entry.value as GeoPoint).toMap()
-        else
-          entry.key: entry.value,
-    };
-  }
-
-  /// Converts the map to Firestore-safe format.
-  ///
-  /// Converts DateTime fields to Timestamp based on common field names.
-  Map<String, dynamic> mapCanConvertToFirebase() {
-    return {
-      for (var entry in entries)
-        if (entry.value is Map<String, dynamic>)
-          entry.key:
-              (entry.value as Map<String, dynamic>).mapCanConvertToFirebase()
-        else if (entry.value is List<dynamic>)
-          entry.key:
-              (entry.value as List<dynamic>)
-                  .take(3)
-                  .map(
-                    (e) =>
-                        e is Map<String, dynamic>
-                            ? e.mapCanConvertToFirebase()
-                            : e,
-                  )
-                  .toList()
-        else if (DateTimeTag.values.any((e) => entry.key == e.name))
-          entry.key: (entry.value as Object?)?.objectToTimestamp()
         else
           entry.key: entry.value,
     };
@@ -111,39 +73,9 @@ extension MapStringDynamicExtension on Map<String, dynamic> {
   /// ```
   String toJson() => json.encode(this);
 
-  /// Gets a DocumentReference value from the map.
-  ///
-  /// Handles both String paths and DocumentReference values.
-  DocumentReference<Map<String, dynamic>>? getDocumentReference(String tag) {
-    try {
-      final value = this[tag];
-      if (value is String) {
-        return FirebaseFirestore.instance.doc(value);
-      } else if (value is DocumentReference<Map<String, dynamic>>) {
-        return value;
-      } else {
-        return null;
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// Gets a Timestamp value from the map.
-  ///
-  /// Handles Timestamp, DateTime, and ISO string values.
-  Timestamp? getTimestamp(String tag) {
-    try {
-      final Object? value = this[tag];
-      return value?.objectToTimestamp();
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   /// Gets a DateTime value from the map.
   ///
-  /// Handles DateTime, Timestamp, and ISO string values.
+  /// Handles DateTime and ISO string values.
   DateTime? getDateTime(String tag) {
     try {
       final Object? value = this[tag];

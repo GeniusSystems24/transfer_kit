@@ -3,109 +3,259 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
 
-import '../core/extension/file_path_extension.dart';
+import '../core/driver/transfer_driver.dart';
 import '../core/extension/string_extension.dart';
 import '../core/file_management_config.dart';
 import '../core/get_storage_repository.dart';
 import '../model/file_exception.dart';
 import '../model/file_path_and_url.dart';
 import '../model/file_task.dart';
+import '../model/multi_download_file_task.dart';
+import '../model/multi_upload_file_task.dart';
+import '../service/metadata_extraction_service.dart';
 import 'file_path_and_url_repository.dart';
 
-part 'firebase_storage_factory.dart';
+// ─────────────────────────────────────────────────────────────────────────────
+// Stream-sharing state (replaces FirebaseStorageFactory)
+// ─────────────────────────────────────────────────────────────────────────────
 
-extension TaskStateExtension on TaskState {
-  FileTaskState get fileTaskState => switch (this) {
-    TaskState.running => FileTaskState.running,
-    TaskState.paused => FileTaskState.paused,
-    TaskState.success => FileTaskState.completed,
-    TaskState.error => FileTaskState.error,
-    TaskState.canceled => FileTaskState.cancelled,
-  };
+final Map<String, StreamController<FileTask>> _downloadStreamCache = {};
+final Map<String, StreamController<FileTask>> _uploadStreamCache = {};
+final Map<String, int> _downloadStreamRefCount = {};
+final Map<String, int> _uploadStreamRefCount = {};
+final Map<String, StreamSubscription<TransferProgressEvent>>
+    _downloadSubscriptions = {};
+final Map<String, StreamSubscription<TransferProgressEvent>>
+    _uploadSubscriptions = {};
+
+Duration get _cleanupDelay => TransferKitConfig.instance.streamCleanupDelay;
+
+void _cleanupDownloadStream(String key) {
+  _downloadSubscriptions[key]?.cancel();
+  _downloadSubscriptions.remove(key);
+  if (_downloadStreamCache[key]?.isClosed == false) {
+    _downloadStreamCache[key]?.close();
+  }
+  _downloadStreamCache.remove(key);
+  _downloadStreamRefCount.remove(key);
+}
+
+void _cleanupUploadStream(String key) {
+  _uploadSubscriptions[key]?.cancel();
+  _uploadSubscriptions.remove(key);
+  if (_uploadStreamCache[key]?.isClosed == false) {
+    _uploadStreamCache[key]?.close();
+  }
+  _uploadStreamCache.remove(key);
+  _uploadStreamRefCount.remove(key);
+}
+
+void _handleDownloadStreamCancel(String key) {
+  _downloadStreamRefCount[key] = (_downloadStreamRefCount[key] ?? 1) - 1;
+  if (_downloadStreamRefCount[key]! <= 0) {
+    Future.delayed(_cleanupDelay, () {
+      if ((_downloadStreamRefCount[key] ?? 0) <= 0) {
+        _cleanupDownloadStream(key);
+      }
+    });
+  }
+}
+
+void _handleUploadStreamCancel(String key) {
+  _uploadStreamRefCount[key] = (_uploadStreamRefCount[key] ?? 1) - 1;
+  if (_uploadStreamRefCount[key]! <= 0) {
+    Future.delayed(_cleanupDelay, () {
+      if ((_uploadStreamRefCount[key] ?? 0) <= 0) {
+        _cleanupUploadStream(key);
+      }
+    });
+  }
+}
+
+Stream<FileTask> _getSharedDownloadStream({
+  required String key,
+  required FileTask task,
+  required TransferDriver driver,
+  required void Function(FileTask) onUpdate,
+  required Future<void> Function(FileTask) onComplete,
+  required void Function(FileTask, Object) onError,
+}) {
+  if (_downloadStreamCache.containsKey(key) &&
+      !_downloadStreamCache[key]!.isClosed) {
+    _downloadStreamRefCount[key] = (_downloadStreamRefCount[key] ?? 0) + 1;
+    return _downloadStreamCache[key]!.stream;
+  }
+
+  final controller = StreamController<FileTask>.broadcast(
+    onCancel: () => _handleDownloadStreamCancel(key),
+  );
+  _downloadStreamCache[key] = controller;
+  _downloadStreamRefCount[key] = 1;
+
+  final request = DownloadRequest(
+    taskId: task.id,
+    source: Uri.parse(task.downloadUrl!),
+    localPath: task.filePath,
+    cacheKey: task.id,
+  );
+
+  _downloadSubscriptions[key] = driver.download(request).listen(
+    (event) async {
+      if (event is TransferProgressUpdate) {
+        final updated = task.copyWith(
+          state: FileTaskState.running,
+          progress: FileProgress(
+            bytesTransferred: event.bytesTransferred,
+            totalBytes: event.totalBytes,
+          ),
+          lastUpdatedAt: DateTime.now(),
+        );
+        onUpdate(updated);
+        if (!controller.isClosed) controller.add(updated);
+      } else if (event is TransferCompleted) {
+        final updated = task.copyWith(
+          state: FileTaskState.completed,
+          filePath: event.localPath ?? task.filePath,
+          progress: FileProgress(bytesTransferred: 1, totalBytes: 1),
+          lastUpdatedAt: DateTime.now(),
+        );
+        await onComplete(updated);
+        if (!controller.isClosed) {
+          controller.add(updated);
+          controller.close();
+        }
+        _cleanupDownloadStream(key);
+      } else if (event is TransferFailed) {
+        final errorTask = task.copyWith(
+          state: FileTaskState.error,
+          errorMessage: event.error.toString(),
+        );
+        onError(errorTask, event.error);
+        if (!controller.isClosed) {
+          controller
+              .addError(FileDownloadException('Download failed: ${event.error}'));
+          controller.close();
+        }
+        _cleanupDownloadStream(key);
+      }
+    },
+    onError: (error) {
+      final errorTask =
+          task.copyWith(state: FileTaskState.error, errorMessage: error.toString());
+      onError(errorTask, error);
+      if (!controller.isClosed) {
+        controller.addError(FileDownloadException('Download failed: $error'));
+        controller.close();
+      }
+      _cleanupDownloadStream(key);
+    },
+  );
+
+  // Emit running state immediately
+  final runningTask = task.copyWith(state: FileTaskState.running);
+  if (!controller.isClosed) controller.add(runningTask);
+  return controller.stream;
+}
+
+Stream<FileTask> _getSharedUploadStream({
+  required String key,
+  required FileTask task,
+  required TransferDriver driver,
+  required void Function(FileTask) onUpdate,
+  required Future<void> Function(FileTask, String?) onComplete,
+  required void Function(FileTask, Object) onError,
+}) {
+  if (_uploadStreamCache.containsKey(key) &&
+      !_uploadStreamCache[key]!.isClosed) {
+    _uploadStreamRefCount[key] = (_uploadStreamRefCount[key] ?? 0) + 1;
+    return _uploadStreamCache[key]!.stream;
+  }
+
+  final controller = StreamController<FileTask>.broadcast(
+    onCancel: () => _handleUploadStreamCancel(key),
+  );
+  _uploadStreamCache[key] = controller;
+  _uploadStreamRefCount[key] = 1;
+
+  final request = UploadRequest(
+    taskId: task.id,
+    localPath: task.filePath,
+    destinationPath: task.destinationPath,
+  );
+
+  _uploadSubscriptions[key] = driver.upload(request).listen(
+    (event) async {
+      if (event is TransferProgressUpdate) {
+        final updated = task.copyWith(
+          state: FileTaskState.running,
+          progress: FileProgress(
+            bytesTransferred: event.bytesTransferred,
+            totalBytes: event.totalBytes,
+          ),
+          lastUpdatedAt: DateTime.now(),
+        );
+        onUpdate(updated);
+        if (!controller.isClosed) controller.add(updated);
+      } else if (event is TransferCompleted) {
+        final updated = task.copyWith(
+          state: FileTaskState.completed,
+          downloadUrl: event.remoteIdentifier ?? task.downloadUrl,
+          progress: FileProgress(bytesTransferred: 1, totalBytes: 1),
+          lastUpdatedAt: DateTime.now(),
+        );
+        await onComplete(updated, event.remoteIdentifier);
+        if (!controller.isClosed) {
+          controller.add(updated);
+          controller.close();
+        }
+        _cleanupUploadStream(key);
+      } else if (event is TransferFailed) {
+        final errorTask = task.copyWith(
+          state: FileTaskState.error,
+          errorMessage: event.error.toString(),
+        );
+        onError(errorTask, event.error);
+        if (!controller.isClosed) {
+          controller
+              .addError(FileUploadException('Upload failed: ${event.error}'));
+          controller.close();
+        }
+        _cleanupUploadStream(key);
+      }
+    },
+    onError: (error) {
+      final errorTask =
+          task.copyWith(state: FileTaskState.error, errorMessage: error.toString());
+      onError(errorTask, error);
+      if (!controller.isClosed) {
+        controller.addError(FileUploadException('Upload failed: $error'));
+        controller.close();
+      }
+      _cleanupUploadStream(key);
+    },
+  );
+
+  final runningTask = task.copyWith(state: FileTaskState.running);
+  if (!controller.isClosed) controller.add(runningTask);
+  return controller.stream;
 }
 
 /// A singleton repository for managing file upload and download tasks.
-///
-/// This class extends [GetStorageRepository] to provide persistent storage
-/// and management of [FileTask] objects. It handles both upload and download
-/// operations with support for task state management, progress tracking,
-/// and batch operations.
-///
-/// The repository uses a singleton pattern to ensure a single source of truth
-/// for all file tasks across the application. Tasks are automatically
-/// persisted to local storage and can be queried by various criteria.
-///
-/// ## Features
-///
-/// * **Task Management**: Create, start, pause, resume, cancel, and retry tasks
-/// * **Querying**: Find tasks by ID, path, URL, group, type, or state
-/// * **Streaming**: Real-time updates via streams for reactive UI
-/// * **Batch Operations**: Perform operations on multiple tasks
-/// * **Persistence**: Automatic storage and retrieval of tasks
-/// * **Caching**: Intelligent handling of already uploaded/downloaded files
-///
-/// ## Usage Example
-///
-/// ```dart
-/// // Get the singleton instance
-/// final repo = FileTaskRepository();
-///
-/// // Create an upload task
-/// final uploadTask = await repo.createUploadTask(
-///   taskId: 'upload_001',
-///   filePath: '/path/to/file.jpg',
-///   destinationPath: 'uploads/file.jpg',
-///   group: FileGroupInfo(id: 'photos', name: 'Photos'),
-///   autoStart: true,
-/// );
-///
-/// // Create a download task
-/// final downloadTask = await repo.createDownloadTask(
-///   taskId: 'download_001',
-///   url: 'https://example.com/file.pdf',
-///   group: FileGroupInfo(id: 'documents', name: 'Documents'),
-///   autoStart: false,
-/// );
-///
-/// // Listen to task changes
-/// repo.getTaskStreamById('upload_001').listen((task) {
-///   if (task != null) {
-///     print('Task progress: ${task.progress.percentage}%');
-///   }
-/// });
-///
-/// // Control task execution
-/// await repo.startTask('download_001');
-/// await repo.pauseTask('upload_001');
-/// await repo.resumeTask('upload_001');
-///
-/// // Query tasks
-/// final activeTasks = repo.getActiveTasks();
-/// final groupTasks = repo.getTasksByGroupId('photos');
-///
-/// // Batch operations
-/// await repo.pauseAllRunningTasks();
-/// await repo.cancelTasksByGroupId('documents');
-/// ```
 class FileTaskRepository extends GetStorageRepository<FileTask> {
   static final FileTaskRepository instance = FileTaskRepository._internal();
 
-  /// Private constructor for singleton pattern.
   FileTaskRepository._internal() : super('file_task_storage2', {});
 
-  /// Factory constructor that returns the singleton instance.
   factory FileTaskRepository() => instance;
 
-  /// Converts a set of [FileTask] objects to JSON string for storage.
   @override
   @protected
   String inputConverter(Set<FileTask> val) =>
       json.encode(val.map((value) => value.toMap()).toList());
 
-  /// Converts a JSON string to a set of [FileTask] objects from storage.
   @override
   @protected
   Set<FileTask> outputConverter(String? value) =>
@@ -114,90 +264,24 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
 
   // MARK: - Remove Operations
 
-  /// Removes a task from the repository by its unique ID.
-  ///
-  /// Returns `1` if the task was found and removed, `0` if not found.
-  ///
-  /// ## Parameters
-  ///
-  /// * [id] - The unique identifier of the task to remove
-  /// * [notify] - Whether to trigger change notifications (default: true)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final result = repo.removeById('task_123');
-  /// if (result == 1) {
-  ///   print('Task removed successfully');
-  /// } else {
-  ///   print('Task not found');
-  /// }
-  /// ```
   int removeById(String id, {bool notify = true}) {
     final item = firstWhereOrNull((task) => task.id == id);
     if (item != null) return remove(item, notify: notify);
     return 0;
   }
 
-  /// Removes all tasks belonging to a specific group.
-  ///
-  /// Returns the number of tasks that were removed.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupId] - The group identifier of tasks to remove
-  /// * [notify] - Whether to trigger change notifications (default: true)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final removedCount = repo.removeByGroupId('photos_group');
-  /// print('Removed $removedCount tasks from photos group');
-  /// ```
   int removeByGroupId(String groupId, {bool notify = true}) {
     final items = value.where((task) => task.groupId == groupId).toSet();
     if (items.isNotEmpty) return removeAll(items, notify: notify);
     return 0;
   }
 
-  /// Removes multiple tasks by their IDs.
-  ///
-  /// Returns the number of tasks that were actually removed.
-  ///
-  /// ## Parameters
-  ///
-  /// * [ids] - Collection of task IDs to remove
-  /// * [notify] - Whether to trigger change notifications (default: true)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final idsToRemove = ['task_1', 'task_2', 'task_3'];
-  /// final removedCount = repo.removeAllByIds(idsToRemove);
-  /// print('Removed $removedCount out of ${idsToRemove.length} tasks');
-  /// ```
   int removeAllByIds(Iterable<String> ids, {bool notify = true}) {
     final items = value.where((task) => ids.contains(task.id)).toSet();
     if (items.isNotEmpty) return removeAll(items, notify: notify);
     return 0;
   }
 
-  /// Removes all tasks belonging to multiple groups.
-  ///
-  /// Returns the number of tasks that were removed.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupIds] - Collection of group IDs whose tasks should be removed
-  /// * [notify] - Whether to trigger change notifications (default: true)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final groupsToRemove = ['temp_files', 'old_uploads'];
-  /// final removedCount = repo.removeAllByGroupIds(groupsToRemove);
-  /// print('Cleaned up $removedCount tasks from temporary groups');
-  /// ```
   int removeAllByGroupIds(Iterable<String> groupIds, {bool notify = true}) {
     final items =
         value.where((task) => groupIds.contains(task.groupId)).toSet();
@@ -205,36 +289,6 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     return 0;
   }
 
-  /// Removes tasks based on flexible filtering criteria.
-  ///
-  /// If no criteria are provided, all tasks will be removed (equivalent to clear).
-  /// Returns the number of tasks that were removed.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupId] - Filter by group ID
-  /// * [type] - Filter by task type (upload/download)
-  /// * [states] - Filter by task states
-  /// * [url] - Filter by download URL
-  /// * [filePath] - Filter by file path
-  /// * [destinationPath] - Filter by destination path
-  /// * [notify] - Whether to trigger change notifications (default: true)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// // Remove all completed upload tasks
-  /// final removed = repo.removeBy(
-  ///   type: FileTaskType.upload,
-  ///   states: {FileTaskState.completed},
-  /// );
-  ///
-  /// // Remove all tasks for a specific file
-  /// final removed2 = repo.removeBy(filePath: '/path/to/file.jpg');
-  ///
-  /// // Clear all tasks (no parameters)
-  /// final cleared = repo.removeBy();
-  /// ```
   int removeBy({
     String? groupId,
     FileTaskType? type,
@@ -250,16 +304,15 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
         url != null ||
         filePath != null ||
         destinationPath != null) {
-      final items =
-          value.where((task) {
-            return (groupId == null || task.groupId == groupId) &&
-                (type == null || task.type == type) &&
-                (states == null || states.contains(task.state)) &&
-                (url == null || task.downloadUrl == url) &&
-                (filePath == null || task.filePath == filePath) &&
-                (destinationPath == null ||
-                    task.destinationPath == destinationPath);
-          }).toSet();
+      final items = value.where((task) {
+        return (groupId == null || task.groupId == groupId) &&
+            (type == null || task.type == type) &&
+            (states == null || states.contains(task.state)) &&
+            (url == null || task.downloadUrl == url) &&
+            (filePath == null || task.filePath == filePath) &&
+            (destinationPath == null ||
+                task.destinationPath == destinationPath);
+      }).toSet();
       if (items.isNotEmpty) return removeAll(items, notify: notify);
       return 0;
     } else {
@@ -269,39 +322,11 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
 
   // MARK: - Stream Operations
 
-  /// Returns a stream of tasks filtered by the specified criteria.
-  ///
-  /// The stream emits a new set of tasks whenever the repository changes
-  /// and the tasks match the provided filters.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupId] - Filter by group ID (optional)
-  /// * [type] - Filter by task type (optional)
-  /// * [states] - Filter by task states (optional)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// // Stream of all active upload tasks
-  /// repo.streamTasksBy(
-  ///   type: FileTaskType.upload,
-  ///   states: {FileTaskState.running, FileTaskState.waiting},
-  /// ).listen((tasks) {
-  ///   print('Active uploads: ${tasks.length}');
-  /// });
-  ///
-  /// // Stream of all tasks in a specific group
-  /// repo.streamTasksBy(groupId: 'photos').listen((tasks) {
-  ///   updateUI(tasks);
-  /// });
-  /// ```
   Stream<Set<FileTask>> streamTasksBy({
     String? groupId,
     FileTaskType? type,
     Set<FileTaskState>? states,
   }) {
-    // Pre-compute conditions once instead of per-task evaluation
     final hasGroupFilter = groupId != null;
     final hasTypeFilter = type != null;
     final hasStatesFilter = states != null && states.isNotEmpty;
@@ -314,83 +339,15 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     );
   }
 
-  /// Returns a stream for a specific task by its ID.
-  ///
-  /// The stream emits the task object whenever it changes, or `null` if
-  /// the task doesn't exist or is removed.
-  ///
-  /// ## Parameters
-  ///
-  /// * [taskId] - The unique identifier of the task
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// repo.getTaskStreamById('upload_001').listen((task) {
-  ///   if (task != null) {
-  ///     print('Progress: ${task.progress.percentage}%');
-  ///     if (task.isComplete) {
-  ///       print('Task completed!');
-  ///     }
-  ///   } else {
-  ///     print('Task not found or removed');
-  ///   }
-  /// });
-  /// ```
   Stream<FileTask?> getTaskStreamById(String taskId) =>
       streamFirstWhereOrNull((task) => task.id == taskId);
 
-  /// Returns a stream for a task identified by its file path.
-  ///
-  /// ## Parameters
-  ///
-  /// * [filePath] - The file path to search for
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// repo.getTaskStreamByFilePath('/photos/image.jpg').listen((task) {
-  ///   if (task != null) {
-  ///     print('File task state: ${task.state}');
-  ///   }
-  /// });
-  /// ```
   Stream<FileTask?> getTaskStreamByFilePath(String filePath) =>
       streamFirstWhereOrNull((task) => task.filePath == filePath);
 
-  /// Returns a stream for a task identified by its destination path.
-  ///
-  /// ## Parameters
-  ///
-  /// * [destinationPath] - The destination path to search for
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// repo.getTaskStreamByDestinationPath('uploads/doc.pdf').listen((task) {
-  ///   if (task != null) {
-  ///     print('Upload task found: ${task.id}');
-  ///   }
-  /// });
-  /// ```
   Stream<FileTask?> getTaskStreamByDestinationPath(String destinationPath) =>
       streamFirstWhereOrNull((task) => task.destinationPath == destinationPath);
 
-  /// Returns a stream for a download task identified by its download URL.
-  ///
-  /// ## Parameters
-  ///
-  /// * [downloadUrl] - The download URL to search for
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// repo.getDownloadTaskStreamByUrl('https://example.com/file.pdf').listen((task) {
-  ///   if (task != null) {
-  ///     print('Download progress: ${task.progress.percentage}%');
-  ///   }
-  /// });
-  /// ```
   Stream<FileTask?> getDownloadTaskStreamByUrl(String downloadUrl) =>
       streamFirstWhereOrNull(
         (task) =>
@@ -398,21 +355,6 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
             task.downloadUrl == downloadUrl,
       );
 
-  /// Returns a stream for an upload task identified by its file path.
-  ///
-  /// ## Parameters
-  ///
-  /// * [filePath] - The file path to search for
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// repo.getUploadTaskStreamByFilePath('/local/file.jpg').listen((task) {
-  ///   if (task != null) {
-  ///     print('Upload progress: ${task.progress.percentage}%');
-  ///   }
-  /// });
-  /// ```
   Stream<FileTask?> getUploadTaskStreamByFilePath(String filePath) =>
       streamFirstWhereOrNull(
         (task) => task.type == FileTaskType.upload && task.filePath == filePath,
@@ -420,31 +362,6 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
 
   // MARK: - Query Operations
 
-  /// Unified task search with multiple criteria
-  ///
-  /// Provides a unified way to search for tasks using different criteria
-  ///
-  /// ## Parameters
-  ///
-  /// * [id] - The unique task identifier
-  /// * [url] - The download URL
-  /// * [filePath] - The local file path
-  /// * [destinationPath] - The destination path
-  /// * [type] - The task type (upload/download)
-  /// * [groupId] - The group identifier
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// // Search by ID
-  /// final task = repo.getTaskBy(id: 'upload_001');
-  ///
-  /// // Search by URL and task type
-  /// final downloadTask = repo.getTaskBy(
-  ///   url: 'https://example.com/file.pdf',
-  ///   type: FileTaskType.download,
-  /// );
-  /// ```
   FileTask? getTaskBy({
     String? id,
     String? url,
@@ -465,87 +382,17 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     );
   }
 
-  /// Finds a task by its unique ID.
-  ///
-  /// Returns the task if found, or `null` if not found.
-  ///
-  /// ## Parameters
-  ///
-  /// * [id] - The unique identifier of the task
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final task = repo.getTaskById('upload_001');
-  /// if (task != null) {
-  ///   print('Task state: ${task.state}');
-  /// } else {
-  ///   print('Task not found');
-  /// }
-  /// ```
   FileTask? getTaskById(String id) => getTaskBy(id: id);
 
-  /// Finds a task by its URL with optional filtering.
-  ///
-  /// Returns the first task matching the URL and optional criteria.
-  ///
-  /// ## Parameters
-  ///
-  /// * [url] - The URL to search for
-  /// * [type] - Optional task type filter
-  /// * [groupId] - Optional group ID filter
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final downloadTask = repo.getTaskByUrl(
-  ///   'https://example.com/file.pdf',
-  ///   type: FileTaskType.download,
-  /// );
-  /// ```
   FileTask? getTaskByUrl(String url, {FileTaskType? type, String? groupId}) =>
       getTaskBy(url: url, type: type, groupId: groupId);
 
-  /// Finds a task by its file path with optional filtering.
-  ///
-  /// Returns the first task matching the file path and optional criteria.
-  ///
-  /// ## Parameters
-  ///
-  /// * [filePath] - The file path to search for
-  /// * [type] - Optional task type filter
-  /// * [groupId] - Optional group ID filter
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final uploadTask = repo.getTaskByFilePath(
-  ///   '/photos/image.jpg',
-  ///   type: FileTaskType.upload,
-  ///   groupId: 'photos',
-  /// );
-  /// ```
   FileTask? getTaskByFilePath(
     String filePath, {
     FileTaskType? type,
     String? groupId,
   }) => getTaskBy(filePath: filePath, type: type, groupId: groupId);
 
-  /// Finds a task by its destination path with optional filtering.
-  ///
-  /// Returns the first task matching the destination path and optional criteria.
-  ///
-  /// ## Parameters
-  ///
-  /// * [destinationPath] - The destination path to search for
-  /// * [type] - Optional task type filter
-  /// * [groupId] - Optional group ID filter
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final task = repo.getTaskByDestinationPath('uploads/document.pdf');
-  /// ```
   FileTask? getTaskByDestinationPath(
     String destinationPath, {
     FileTaskType? type,
@@ -553,34 +400,11 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
   }) =>
       getTaskBy(destinationPath: destinationPath, type: type, groupId: groupId);
 
-  /// Returns a set of tasks filtered by the specified criteria.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupId] - Filter by group ID (optional)
-  /// * [type] - Filter by task type (optional)
-  /// * [states] - Filter by task states (optional)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// // Get all running tasks
-  /// final runningTasks = repo.getTasksBy(
-  ///   states: {FileTaskState.running},
-  /// );
-  ///
-  /// // Get all upload tasks in a group
-  /// final groupUploads = repo.getTasksBy(
-  ///   groupId: 'photos',
-  ///   type: FileTaskType.upload,
-  /// );
-  /// ```
   Set<FileTask> getTasksBy({
     String? groupId,
     FileTaskType? type,
     Set<FileTaskState>? states,
   }) {
-    // Pre-compute conditions once instead of per-task evaluation
     final hasGroupFilter = groupId != null;
     final hasTypeFilter = type != null;
     final hasStatesFilter = states != null && states.isNotEmpty;
@@ -593,189 +417,46 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     );
   }
 
-  /// Returns all upload tasks.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final uploads = repo.getUploadTasks();
-  /// print('Total uploads: ${uploads.length}');
-  /// ```
   Set<FileTask> getUploadTasks() => getTasksBy(type: FileTaskType.upload);
 
-  /// Returns all download tasks.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final downloads = repo.getDownloadTasks();
-  /// print('Total downloads: ${downloads.length}');
-  /// ```
   Set<FileTask> getDownloadTasks() => getTasksBy(type: FileTaskType.download);
 
-  /// Returns all active tasks (running or waiting).
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final activeTasks = repo.getActiveTasks();
-  /// if (activeTasks.isEmpty) {
-  ///   print('No active tasks');
-  /// }
-  /// ```
   Set<FileTask> getActiveTasks() =>
       getTasksBy(states: {FileTaskState.running, FileTaskState.waiting});
 
-  /// Returns all completed tasks.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final completed = repo.getCompletedTasks();
-  /// print('Completed tasks: ${completed.length}');
-  /// ```
   Set<FileTask> getCompletedTasks() =>
       getTasksBy(states: {FileTaskState.completed});
 
-  /// Returns all waiting tasks.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final waiting = repo.getWaitingTasks();
-  /// print('Tasks in queue: ${waiting.length}');
-  /// ```
   Set<FileTask> getWaitingTasks() =>
       getTasksBy(states: {FileTaskState.waiting});
 
-  /// Returns all tasks in a specific group.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupId] - The group identifier
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final photoTasks = repo.getTasksByGroupId('photos');
-  /// print('Photo tasks: ${photoTasks.length}');
-  /// ```
   Set<FileTask> getTasksByGroupId(String groupId) =>
       getTasksBy(groupId: groupId);
 
-  /// Returns all upload tasks in a specific group.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupId] - The group identifier
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final photoUploads = repo.getUploadTasksByGroupId('photos');
-  /// ```
   Set<FileTask> getUploadTasksByGroupId(String groupId) =>
       getTasksBy(groupId: groupId, type: FileTaskType.upload);
 
-  /// Returns all download tasks in a specific group.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupId] - The group identifier
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final documentDownloads = repo.getDownloadTasksByGroupId('documents');
-  /// ```
   Set<FileTask> getDownloadTasksByGroupId(String groupId) =>
       getTasksBy(groupId: groupId, type: FileTaskType.download);
 
-  /// Alias for [getTaskByFilePath].
-  ///
-  /// ## Parameters
-  ///
-  /// * [path] - The file path to search for
   FileTask? getTaskByPath(String path) => getTaskBy(filePath: path);
 
-  /// Alias for [getTaskByUrl] for download URLs.
-  ///
-  /// ## Parameters
-  ///
-  /// * [downloadUrl] - The download URL to search for
   FileTask? getTaskByDownloadUrl(String downloadUrl) =>
       getTaskBy(url: downloadUrl);
 
-  /// Returns an upload task for the specified file path.
-  ///
-  /// ## Parameters
-  ///
-  /// * [filePath] - The file path to search for
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final uploadTask = repo.getUploadTaskByFilePath('/photos/image.jpg');
-  /// ```
   FileTask? getUploadTaskByFilePath(String filePath) =>
       getTaskBy(filePath: filePath, type: FileTaskType.upload);
 
-  /// Returns a download task for the specified URL.
-  ///
-  /// ## Parameters
-  ///
-  /// * [url] - The download URL to search for
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final downloadTask = repo.getDownloadTaskByUrl('https://example.com/file.pdf');
-  /// ```
   FileTask? getDownloadTaskByUrl(String url) =>
       getTaskBy(url: url, type: FileTaskType.download);
 
-  /// Alias for [getTaskByUrl] for uploaded URLs.
-  ///
-  /// ## Parameters
-  ///
-  /// * [url] - The uploaded URL to search for
   FileTask? getTaskByUploadedUrl(String url) => getTaskBy(url: url);
 
-  /// Returns a map of all tasks grouped by their group IDs.
-  ///
-  /// The keys are group IDs and values are sets of tasks in each group.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final groups = repo.getAllGroups();
-  /// groups.forEach((groupId, tasks) {
-  ///   print('Group $groupId has ${tasks.length} tasks');
-  /// });
-  /// ```
   Map<String, Set<FileTask>> getAllGroups() =>
       value.groupSetsBy((task) => task.groupId ?? '');
 
   // MARK: - Task Control Operations
 
-  /// Starts a task that is currently waiting or paused.
-  ///
-  /// Returns `true` if the task was successfully started, `false` otherwise.
-  ///
-  /// ## Parameters
-  ///
-  /// * [taskId] - The unique identifier of the task to start
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final success = await repo.startTask('upload_001');
-  /// if (success) {
-  ///   print('Task started successfully');
-  /// } else {
-  ///   print('Task could not be started (not found or invalid state)');
-  /// }
-  /// ```
   Future<bool> startTask(String taskId) async {
     final task = getTaskById(taskId);
     if (task != null && (task.isWaiting || task.isPaused)) {
@@ -785,25 +466,21 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     return false;
   }
 
-  /// Pauses a currently running task.
+  /// Pauses a running task.
   ///
-  /// Returns `true` if the task was successfully paused, `false` otherwise.
-  ///
-  /// ## Parameters
-  ///
-  /// * [taskId] - The unique identifier of the task to pause
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final success = await repo.pauseTask('download_001');
-  /// if (success) {
-  ///   print('Task paused successfully');
-  /// }
-  /// ```
+  /// Throws [UnsupportedCapabilityException] synchronously if the driver does
+  /// not support pause.
   Future<bool> pauseTask(String taskId) async {
+    final driver = TransferKitConfig.instance.driver;
+    if (!driver.capabilities.supportsPause) {
+      throw UnsupportedCapabilityException(
+        'The active driver does not support pause.',
+        capability: 'supportsPause',
+      );
+    }
     final task = getTaskById(taskId);
     if (task != null && task.isRunning) {
+      await driver.pause(taskId);
       addOrUpdate(task.copyWith(state: FileTaskState.paused));
       return true;
     }
@@ -812,23 +489,19 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
 
   /// Resumes a paused task.
   ///
-  /// Returns `true` if the task was successfully resumed, `false` otherwise.
-  ///
-  /// ## Parameters
-  ///
-  /// * [taskId] - The unique identifier of the task to resume
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final success = await repo.resumeTask('upload_001');
-  /// if (success) {
-  ///   print('Task resumed successfully');
-  /// }
-  /// ```
+  /// Throws [UnsupportedCapabilityException] synchronously if the driver does
+  /// not support resume.
   Future<bool> resumeTask(String taskId) async {
+    final driver = TransferKitConfig.instance.driver;
+    if (!driver.capabilities.supportsResume) {
+      throw UnsupportedCapabilityException(
+        'The active driver does not support resume.',
+        capability: 'supportsResume',
+      );
+    }
     final task = getTaskById(taskId);
     if (task != null && task.isPaused) {
+      await driver.resume(taskId);
       addOrUpdate(task.copyWith(state: FileTaskState.running));
       return true;
     }
@@ -837,46 +510,25 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
 
   /// Cancels an active task.
   ///
-  /// Returns `true` if the task was successfully cancelled, `false` otherwise.
-  ///
-  /// ## Parameters
-  ///
-  /// * [taskId] - The unique identifier of the task to cancel
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final success = await repo.cancelTask('upload_001');
-  /// if (success) {
-  ///   print('Task cancelled successfully');
-  /// }
-  /// ```
+  /// Throws [UnsupportedCapabilityException] synchronously if the driver does
+  /// not support cancel.
   Future<bool> cancelTask(String taskId) async {
+    final driver = TransferKitConfig.instance.driver;
+    if (!driver.capabilities.supportsCancel) {
+      throw UnsupportedCapabilityException(
+        'The active driver does not support cancel.',
+        capability: 'supportsCancel',
+      );
+    }
     final task = getTaskById(taskId);
     if (task != null && !task.isComplete && !task.isCancelled) {
+      await driver.cancel(taskId);
       addOrUpdate(task.copyWith(state: FileTaskState.cancelled));
       return true;
     }
     return false;
   }
 
-  /// Retries a failed or cancelled task.
-  ///
-  /// Resets the task to waiting state with zero progress and clears any error message.
-  /// Returns `true` if the task was successfully reset for retry, `false` otherwise.
-  ///
-  /// ## Parameters
-  ///
-  /// * [taskId] - The unique identifier of the task to retry
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final success = await repo.retryTask('failed_upload');
-  /// if (success) {
-  ///   print('Task reset for retry');
-  /// }
-  /// ```
   Future<bool> retryTask(String taskId) async {
     final task = getTaskById(taskId);
     if (task != null && (task.isError || task.isCancelled)) {
@@ -894,191 +546,57 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
 
   // MARK: - Batch Operations
 
-  /// Starts all tasks that are currently in waiting state.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await repo.startAllWaitingTasks();
-  /// print('All waiting tasks have been started');
-  /// ```
   Future<void> startAllWaitingTasks() async {
-    final waitingTasks = getWaitingTasks();
-    for (var task in waitingTasks) {
+    for (var task in getWaitingTasks()) {
       await startTask(task.id);
     }
   }
 
-  /// Pauses all currently running tasks.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await repo.pauseAllRunningTasks();
-  /// print('All running tasks have been paused');
-  /// ```
   Future<void> pauseAllRunningTasks() async {
-    final runningTasks = getTasksBy(states: {FileTaskState.running});
-    for (var task in runningTasks) {
+    for (var task in getTasksBy(states: {FileTaskState.running})) {
       await pauseTask(task.id);
     }
   }
 
-  /// Cancels all active tasks (running or waiting).
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await repo.cancelAllActiveTasks();
-  /// print('All active tasks have been cancelled');
-  /// ```
   Future<void> cancelAllActiveTasks() async {
-    final activeTasks = getActiveTasks();
-    for (var task in activeTasks) {
+    for (var task in getActiveTasks()) {
       await cancelTask(task.id);
     }
   }
 
-  /// Removes a task from the repository.
-  ///
-  /// This is a convenience method that calls [removeById].
-  ///
-  /// ## Parameters
-  ///
-  /// * [taskId] - The unique identifier of the task to remove
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await repo.removeTask('completed_upload');
-  /// ```
-  Future<void> removeTask(String taskId) async {
-    removeById(taskId);
-  }
+  Future<void> removeTask(String taskId) async => removeById(taskId);
 
-  /// Removes all completed tasks from the repository.
-  ///
-  /// Returns the number of tasks that were removed.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final cleanedCount = repo.clearCompletedTasks();
-  /// print('Cleaned up $cleanedCount completed tasks');
-  /// ```
   int clearCompletedTasks() => removeBy(states: {FileTaskState.completed});
 
-  /// Pauses all running tasks in a specific group.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupId] - The group identifier
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await repo.pauseTasksByGroupId('photos');
-  /// print('All photo tasks have been paused');
-  /// ```
   Future<void> pauseTasksByGroupId(String groupId) async {
-    final groupTasks =
-        value
-            .where((task) => task.groupId == groupId && task.isRunning)
-            .toList();
-    for (var task in groupTasks) {
+    for (var task
+        in value.where((t) => t.groupId == groupId && t.isRunning).toList()) {
       await pauseTask(task.id);
     }
   }
 
-  /// Resumes all paused or waiting tasks in a specific group.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupId] - The group identifier
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await repo.resumeTasksByGroupId('documents');
-  /// print('All document tasks have been resumed');
-  /// ```
   Future<void> resumeTasksByGroupId(String groupId) async {
-    final groupTasks =
-        value
-            .where(
-              (task) =>
-                  task.groupId == groupId && (task.isPaused || task.isWaiting),
-            )
-            .toList();
-    for (var task in groupTasks) {
+    for (var task in value
+        .where((t) => t.groupId == groupId && (t.isPaused || t.isWaiting))
+        .toList()) {
       await startTask(task.id);
     }
   }
 
-  /// Cancels all active tasks in a specific group.
-  ///
-  /// ## Parameters
-  ///
-  /// * [groupId] - The group identifier
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await repo.cancelTasksByGroupId('temp_files');
-  /// print('All temporary file tasks have been cancelled');
-  /// ```
   Future<void> cancelTasksByGroupId(String groupId) async {
-    final groupTasks =
-        value
-            .where(
-              (task) =>
-                  task.groupId == groupId &&
-                  !task.isComplete &&
-                  !task.isCancelled,
-            )
-            .toList();
-    for (var task in groupTasks) {
+    for (var task in value
+        .where((t) => t.groupId == groupId && !t.isComplete && !t.isCancelled)
+        .toList()) {
       await cancelTask(task.id);
     }
   }
 
   // MARK: - Task Creation
 
-  /// Creates a new upload task for the specified file.
+  /// Creates a new upload task.
   ///
-  /// This method handles file validation, checks for existing tasks, and
-  /// determines if the file is already uploaded (cached). If the file
-  /// doesn't exist, an error task is created.
-  ///
-  /// Returns the created or existing [FileTask].
-  ///
-  /// ## Parameters
-  ///
-  /// * [taskId] - Unique identifier for the new task
-  /// * [filePath] - Local path to the file to upload
-  /// * [destinationPath] - Remote destination path for the upload
-  /// * [group] - Group information for organizing tasks
-  /// * [autoStart] - Whether to automatically start the task (default: true)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final uploadTask = await repo.createUploadTask(
-  ///   taskId: 'upload_${DateTime.now().millisecondsSinceEpoch}',
-  ///   filePath: '/storage/photos/image.jpg',
-  ///   destinationPath: 'user_uploads/photos/image.jpg',
-  ///   group: FileGroupInfo(id: 'photos', name: 'Photo Uploads'),
-  ///   autoStart: false, // Start manually later
-  /// );
-  ///
-  /// if (uploadTask.isError) {
-  ///   print('Error: ${uploadTask.errorMessage}');
-  /// } else if (uploadTask.isCached) {
-  ///   print('File already uploaded');
-  /// } else {
-  ///   print('Upload task created successfully');
-  /// }
-  /// ```
+  /// Throws [UnsupportedCapabilityException] synchronously if the driver does
+  /// not support upload.
   Future<FileTask> createUploadTask({
     required String taskId,
     required String filePath,
@@ -1086,10 +604,18 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     required FileGroupInfo group,
     bool autoStart = true,
   }) async {
+    final driver = TransferKitConfig.instance.driver;
+    if (!driver.capabilities.supportsUpload) {
+      throw UnsupportedCapabilityException(
+        'The active driver does not support upload.',
+        capability: 'supportsUpload',
+      );
+    }
+
     final existingTask = getUploadTaskByFilePath(filePath);
     if (existingTask != null) return existingTask;
 
-    var filePathAndUrl = await FilePathAndURLRepository.instance
+    final filePathAndUrl = await FilePathAndURLRepository.instance
         .getUploadFilePathAndURL(
           path: filePath,
           destinationPath: destinationPath,
@@ -1109,66 +635,29 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
       return errorTask;
     } else {
       final fileSize = await filePathAndUrl.file.length();
-
-      // Create initial waiting task
-      final firebaseTask = FirebaseStorageFactory.createUpload(
-        filePathAndUrl.path,
-        filePathAndUrl.destinationPath!,
-        autoStart: autoStart,
-      );
-
       final newTask = FileTask.upload(
         id: taskId,
         filePath: filePathAndUrl.path,
         destinationPath: filePathAndUrl.destinationPath!,
         downloadUrl: filePathAndUrl.url,
-        state:
-            filePathAndUrl.url != null
-                ? FileTaskState.cached
-                : firebaseTask.snapshot.state.fileTaskState,
+        state: filePathAndUrl.url != null
+            ? FileTaskState.cached
+            : (autoStart ? FileTaskState.running : FileTaskState.waiting),
         group: group,
         progress: FileProgress(
           bytesTransferred: filePathAndUrl.url != null ? fileSize : 0,
           totalBytes: fileSize,
         ),
-        firebaseTask: firebaseTask,
       );
       addOrUpdate(newTask);
       return newTask;
     }
   }
 
-  /// Creates a new download task for the specified URL.
+  /// Creates a new download task.
   ///
-  /// This method checks for existing tasks and cached files. If the file
-  /// is already downloaded and cached, a cached task is created. Otherwise,
-  /// a new download task is created with metadata from Firebase Storage.
-  ///
-  /// Returns the created or existing [FileTask].
-  ///
-  /// ## Parameters
-  ///
-  /// * [taskId] - Unique identifier for the new task
-  /// * [url] - The download URL
-  /// * [group] - Group information for organizing tasks
-  /// * [autoStart] - Whether to automatically start the task (default: true)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final downloadTask = await repo.createDownloadTask(
-  ///   taskId: 'download_${DateTime.now().millisecondsSinceEpoch}',
-  ///   url: 'https://firebasestorage.googleapis.com/v0/b/project/o/file.pdf',
-  ///   group: FileGroupInfo(id: 'documents', name: 'Document Downloads'),
-  ///   autoStart: true,
-  /// );
-  ///
-  /// if (downloadTask.isCached) {
-  ///   print('File already downloaded and cached');
-  /// } else {
-  ///   print('Download task created successfully');
-  /// }
-  /// ```
+  /// Throws [UnsupportedCapabilityException] synchronously if the driver does
+  /// not support download.
   Future<FileTask> createDownloadTask({
     required String taskId,
     required String url,
@@ -1177,10 +666,16 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     String? cacheKey,
     bool forceRefresh = false,
   }) async {
-    // forceRefresh: delete existing entry and skip cache lookup entirely
+    final driver = TransferKitConfig.instance.driver;
+    if (!driver.capabilities.supportsDownload) {
+      throw UnsupportedCapabilityException(
+        'The active driver does not support download.',
+        capability: 'supportsDownload',
+      );
+    }
+
     if (forceRefresh) {
-      final existing =
-          (cacheKey != null
+      final existing = (cacheKey != null
               ? FilePathAndURLRepository.instance.getByKey(cacheKey)
               : null) ??
           FilePathAndURLRepository.instance.getByUrl(url);
@@ -1214,29 +709,266 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
         return newTask;
       }
 
-      final fileTask = FileTaskRepository.instance.getTaskByUrl(url);
-      if (fileTask != null) return fileTask;
+      final existingByUrl = getTaskByUrl(url);
+      if (existingByUrl != null) return existingByUrl;
     }
-
-    final filePathAndUrl = FilePathAndURL.url(url: url, cacheKey: cacheKey);
-    final fileSize =
-        (await FirebaseStorage.instance.refFromURL(url).getMetadata()).size;
-
-    final firebaseTask = FirebaseStorageFactory.createDownload(
-      url,
-      autoStart: autoStart,
-    );
 
     final newTask = FileTask.download(
       id: taskId,
-      downloadUrl: filePathAndUrl.url!,
-      state: firebaseTask.snapshot.state.fileTaskState,
+      downloadUrl: url,
+      state: autoStart ? FileTaskState.running : FileTaskState.waiting,
       group: group,
-      progress: FileProgress(bytesTransferred: 0, totalBytes: fileSize ?? 0),
-      firebaseTask: firebaseTask,
+      progress: FileProgress(bytesTransferred: 0, totalBytes: 0),
     );
-
     addOrUpdate(newTask);
     return newTask;
+  }
+
+  // MARK: - Streaming
+
+  /// Creates a stream emitting download progress for [task].
+  ///
+  /// Uses the shared stream pattern — multiple callers for the same URL share
+  /// one underlying driver subscription.
+  Stream<FileTask> downloadTaskStream({
+    required FileTask task,
+    StreamController<FileTask>? controller,
+  }) {
+    if (task.isComplete) {
+      final sc = controller ?? StreamController<FileTask>();
+      sc.add(task);
+      sc.close();
+      return sc.stream;
+    }
+
+    final driver = TransferKitConfig.instance.driver;
+    final key = task.downloadUrl!;
+
+    return _getSharedDownloadStream(
+      key: key,
+      task: task,
+      driver: driver,
+      onUpdate: addOrUpdate,
+      onComplete: (updatedTask) async {
+        final existingEntry =
+            FilePathAndURLRepository.instance.getByUrl(updatedTask.downloadUrl ?? '');
+        var fpau = updatedTask.filePathAndURL;
+        final extracted = await MetadataExtractionService().extractMetadata(
+          File(updatedTask.filePath),
+          existingMetadata:
+              existingEntry?.metadata ?? fpau.metadata,
+        );
+        fpau = fpau.copyWithMergedMetadata(extracted);
+        final now = DateTime.now();
+        fpau = fpau.copyWith(
+          createdAt: existingEntry == null ? now : existingEntry.createdAt,
+          updatedAt: now,
+        );
+        FilePathAndURLRepository.instance.addOrUpdate(fpau);
+        addOrUpdate(updatedTask);
+      },
+      onError: (errorTask, error) {
+        addOrUpdate(errorTask);
+        Logger().e('Download failed: ${error.runtimeType}');
+      },
+    );
+  }
+
+  /// Creates a stream emitting upload progress for [task].
+  Stream<FileTask> uploadTaskStream({
+    required FileTask task,
+    StreamController<FileTask>? controller,
+  }) {
+    if (task.isComplete) {
+      final sc = controller ?? StreamController<FileTask>();
+      sc.add(task);
+      sc.close();
+      return sc.stream;
+    }
+
+    final driver = TransferKitConfig.instance.driver;
+    final key = task.filePath;
+
+    return _getSharedUploadStream(
+      key: key,
+      task: task,
+      driver: driver,
+      onUpdate: addOrUpdate,
+      onComplete: (updatedTask, remoteIdentifier) async {
+        var fpau = updatedTask.filePathAndURL;
+        final extracted = await MetadataExtractionService().extractMetadata(
+          File(updatedTask.filePath),
+          existingMetadata: fpau.metadata,
+        );
+        fpau = fpau.copyWithMergedMetadata(extracted);
+        FilePathAndURLRepository.instance.addOrUpdate(fpau);
+        addOrUpdate(updatedTask);
+      },
+      onError: (errorTask, error) {
+        addOrUpdate(errorTask);
+        Logger().e('Upload failed: ${error.runtimeType}');
+      },
+    );
+  }
+
+  /// Downloads multiple files in parallel with combined progress.
+  Stream<MultiDownloadFileTask> downloadTasksParallelStream({
+    required Set<FilePathAndURL> filePathsAndUrls,
+    required FileGroupInfo group,
+    bool autoStart = true,
+    StreamController<MultiDownloadFileTask>? controller,
+  }) {
+    assert(filePathsAndUrls.isNotEmpty, 'File paths and urls must not be empty');
+    final newController =
+        controller ?? StreamController<MultiDownloadFileTask>();
+
+    _downloadFilesParallelWithProgress(
+      filePathsAndUrls: filePathsAndUrls,
+      controller: newController,
+      autoStart: autoStart,
+      group: group,
+    ).catchError((error) {
+      newController.addError(
+          FileDownloadException('Failed to download files in parallel: $error'));
+      newController.close();
+    });
+
+    return newController.stream;
+  }
+
+  Future<void> _downloadFilesParallelWithProgress({
+    required Set<FilePathAndURL> filePathsAndUrls,
+    required StreamController<MultiDownloadFileTask> controller,
+    required FileGroupInfo group,
+    bool autoStart = true,
+  }) async {
+    try {
+      final List<FileTask> tasks = [];
+      final fileList = filePathsAndUrls.toList();
+
+      for (int i = 0; i < fileList.length; i++) {
+        tasks.add(
+          await createDownloadTask(
+            taskId: '${group.id}_$i',
+            url: fileList[i].url!,
+            group: group,
+            autoStart: autoStart,
+          ),
+        );
+      }
+
+      controller
+          .add(MultiDownloadFileTask.fromTasks(tasks: tasks, taskId: group.id));
+
+      int completedCount = tasks.where((t) => t.isComplete).length;
+
+      for (int i = 0; i < tasks.length; i++) {
+        final task = tasks[i];
+        if (task.isComplete) continue;
+
+        downloadTaskStream(task: task).listen((updatedTask) {
+          tasks[i] = updatedTask;
+          if (!controller.isClosed) {
+            controller.add(
+                MultiDownloadFileTask.fromTasks(tasks: tasks, taskId: group.id));
+          }
+          if (updatedTask.isComplete) {
+            completedCount++;
+            if (completedCount >= tasks.length && !controller.isClosed) {
+              controller.close();
+            }
+          }
+        });
+      }
+
+      if (!controller.isClosed) {
+        controller
+            .add(MultiDownloadFileTask.fromTasks(tasks: tasks, taskId: group.id));
+      }
+    } catch (e) {
+      if (!controller.isClosed) {
+        controller.addError(
+            FileDownloadException('Failed to download files in parallel: $e'));
+        controller.close();
+      }
+    }
+  }
+
+  /// Uploads multiple files in parallel with combined progress.
+  Stream<MultiUploadFileTask> uploadTasksParallelStream({
+    required Set<FilePathAndURL> filePathsAndUrls,
+    required FileGroupInfo group,
+    bool autoStart = true,
+    StreamController<MultiUploadFileTask>? controller,
+  }) {
+    assert(filePathsAndUrls.isNotEmpty, 'File paths and urls must not be empty');
+    final newController = controller ?? StreamController<MultiUploadFileTask>();
+
+    _uploadTasksParallelStream(
+      filePathsAndUrls: filePathsAndUrls,
+      controller: newController,
+      autoStart: autoStart,
+      group: group,
+    ).catchError((error) {
+      newController
+          .addError(FileUploadException('Failed to upload files in parallel: $error'));
+      newController.close();
+    });
+
+    return newController.stream;
+  }
+
+  Future<void> _uploadTasksParallelStream({
+    required Set<FilePathAndURL> filePathsAndUrls,
+    required StreamController<MultiUploadFileTask> controller,
+    required FileGroupInfo group,
+    bool autoStart = true,
+  }) async {
+    try {
+      final List<FileTask> tasks = [];
+      final fileList = filePathsAndUrls.toList();
+
+      for (int i = 0; i < fileList.length; i++) {
+        tasks.add(
+          await createUploadTask(
+            taskId: '${group.id}_$i',
+            filePath: fileList[i].path,
+            destinationPath: fileList[i].destinationPath!,
+            group: group,
+            autoStart: autoStart,
+          ),
+        );
+      }
+
+      controller
+          .add(MultiUploadFileTask.fromTasks(tasks: tasks, taskId: group.id));
+
+      int completedCount = tasks.where((t) => t.isComplete).length;
+
+      for (int i = 0; i < tasks.length; i++) {
+        final task = tasks[i];
+        if (task.isComplete) continue;
+
+        uploadTaskStream(task: task).listen((updatedTask) {
+          tasks[i] = updatedTask;
+          if (!controller.isClosed) {
+            controller.add(
+                MultiUploadFileTask.fromTasks(tasks: tasks, taskId: group.id));
+          }
+          if (updatedTask.isComplete) {
+            completedCount++;
+            if (completedCount >= tasks.length && !controller.isClosed) {
+              controller.close();
+            }
+          }
+        });
+      }
+    } catch (e) {
+      if (!controller.isClosed) {
+        controller.addError(
+            FileUploadException('Failed to upload files in parallel: $e'));
+        controller.close();
+      }
+    }
   }
 }

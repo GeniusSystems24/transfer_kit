@@ -1,7 +1,7 @@
-/// A comprehensive file management solution for Flutter with Firebase Storage.
+/// A comprehensive provider-agnostic file management solution for Flutter.
 ///
 /// This package provides:
-/// - File upload/download with progress tracking
+/// - File upload/download with progress tracking via any [TransferDriver]
 /// - Intelligent file caching
 /// - Task management (pause, resume, cancel, retry)
 /// - Batch operations for multiple files
@@ -13,8 +13,9 @@
 /// ```dart
 /// import 'package:transfer_kit/transfer_kit.dart';
 ///
-/// // Initialize app directories (required)
+/// // Initialize app directories and configure a driver (required)
 /// await FilePathExtension.initAppDirectory();
+/// TransferKitConfig.init(driver: MyDriver());
 ///
 /// // Get the file manager
 /// final fileManager = TransferKit();
@@ -30,6 +31,14 @@ library;
 // Get Storage
 export 'package:get_storage/get_storage.dart';
 
+// Driver abstractions
+export 'src/core/driver/transfer_driver.dart';
+export 'src/core/driver/transfer_capabilities.dart';
+export 'src/core/driver/download_request.dart';
+export 'src/core/driver/upload_request.dart';
+export 'src/core/driver/transfer_progress_event.dart';
+export 'src/core/exception/unsupported_capability_exception.dart';
+
 // Core extensions
 export 'src/core/extension/file_path_extension.dart';
 export 'src/core/extension/num_extension.dart';
@@ -37,7 +46,6 @@ export 'src/core/extension/string_extension.dart';
 export 'src/core/extension/map_extension.dart';
 export 'src/core/extension/date_time_extension.dart';
 export 'src/core/extension/dynamic_extension.dart';
-export 'src/core/extension/geo_point_extension.dart';
 export 'src/core/extension/list_extension.dart';
 
 // Core utilities

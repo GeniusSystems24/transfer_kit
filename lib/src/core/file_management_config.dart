@@ -144,6 +144,7 @@ class TransferKitConfig {
   /// );
   /// ```
   static Future<void> init({
+    required TransferDriver driver,
     int? maxConcurrentDownloads,
     int? maxConcurrentUploads,
     Duration? streamCleanupDelay,
@@ -167,6 +168,7 @@ class TransferKitConfig {
   }) async {
     await GetStorage.init();
     _instance = TransferKitConfig._internal()
+      .._driver = driver
       .._maxConcurrentDownloads = maxConcurrentDownloads ?? 5
       .._maxConcurrentUploads = maxConcurrentUploads ?? 3
       .._streamCleanupDelay = streamCleanupDelay ?? const Duration(seconds: 3)
@@ -200,6 +202,14 @@ class TransferKitConfig {
   // ═══════════════════════════════════════════════════════════════════════════
   // CONCURRENCY SETTINGS
   // ═══════════════════════════════════════════════════════════════════════════
+
+  TransferDriver? _driver;
+
+  /// The active transfer driver. Throws if [init] has not been called.
+  TransferDriver get driver {
+    assert(_driver != null, 'TransferKitConfig.init() must be called with a driver before use.');
+    return _driver!;
+  }
 
   int _maxConcurrentDownloads = 5;
   int _maxConcurrentUploads = 3;

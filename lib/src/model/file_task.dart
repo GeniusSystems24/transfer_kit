@@ -1,11 +1,9 @@
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/extension/file_path_extension.dart';
 import '../core/extension/map_extension.dart';
 import '../core/get_storage_repository.dart';
-import '../repository/file_task_repository.dart';
 import 'file_path_and_url.dart';
 import 'media_metadata.dart';
 
@@ -166,7 +164,7 @@ class FileTask extends GetStorageMethods {
 
   static const String downloadUrlTag = 'downloadUrl';
 
-  /// Get the destination path of firebase storage
+  /// Get the destination path of the remote storage
   String? get destinationPath => data.getString(destinationPathTag);
   set destinationPath(String? value) {
     data[destinationPathTag] = value;
@@ -273,45 +271,6 @@ class FileTask extends GetStorageMethods {
   set groupId(String? value) => group = group.copyWith(id: value);
   static const String groupIdTag = 'groupId';
 
-  /// Get the reference of the task
-  Reference get reference {
-    if (type == FileTaskType.upload) {
-      return FirebaseStorage.instance.ref().child(destinationPath!);
-    } else {
-      return FirebaseStorage.instance.refFromURL(downloadUrl!);
-    }
-  }
-
-  Task? task;
-
-  /// Get the firebase task of the task
-  Task? firebaseTask({bool justCheck = false}) {
-    if (justCheck) return task;
-
-    if (!{
-      FileTaskState.waiting,
-      FileTaskState.running,
-      FileTaskState.paused,
-    }.contains(state)) {
-      return null;
-    }
-
-    if (task != null) return task;
-
-    if (type == FileTaskType.upload) {
-      return task = FirebaseStorageFactory.createUpload(
-        filePath,
-        destinationPath!,
-        autoStart: state == FileTaskState.running,
-      );
-    } else {
-      return task = FirebaseStorageFactory.createDownload(
-        downloadUrl!,
-        autoStart: state == FileTaskState.running,
-      );
-    }
-  }
-
   FileTask({
     required String id,
     required String filePath,
@@ -322,11 +281,9 @@ class FileTask extends GetStorageMethods {
     FileTaskState state = FileTaskState.waiting,
     FileProgress? progress,
     String? errorMessage,
-    Task? firebaseTask,
     DateTime? createdAt,
     DateTime? lastUpdatedAt,
-  }) : task = firebaseTask,
-       data = {
+  }) : data = {
          idTag: id,
          filePathTag: filePath,
          downloadUrlTag: downloadUrl,
@@ -348,17 +305,13 @@ class FileTask extends GetStorageMethods {
     FileTaskState state = FileTaskState.waiting,
     FileProgress? progress,
     String? errorMessage,
-    Task? firebaseTask,
     DateTime? createdAt,
     DateTime? lastUpdatedAt,
     MediaMetadata? cachedMetadata,
-  }) : task = firebaseTask,
-       data = {
+  }) : data = {
          idTag: id,
          filePathTag: downloadUrl.toHashName().toCachedPath(),
          downloadUrlTag: downloadUrl,
-         destinationPathTag:
-             FirebaseStorage.instance.refFromURL(downloadUrl).fullPath,
          typeTag: FileTaskType.download.name,
          stateTag: state.name,
          createdAtTag: (createdAt ?? DateTime.now()).toIso8601String(),
@@ -379,11 +332,9 @@ class FileTask extends GetStorageMethods {
     FileTaskState state = FileTaskState.waiting,
     FileProgress? progress,
     String? errorMessage,
-    UploadTask? firebaseTask,
     DateTime? createdAt,
     DateTime? lastUpdatedAt,
-  }) : task = firebaseTask,
-       data = {
+  }) : data = {
          idTag: id,
          filePathTag: filePath,
          downloadUrlTag: downloadUrl,
@@ -411,7 +362,6 @@ class FileTask extends GetStorageMethods {
         lastUpdatedAt: task.lastUpdatedAt,
         progress: task.progress,
         errorMessage: task.errorMessage,
-        firebaseTask: task.firebaseTask(justCheck: true),
       );
 
   /// Create from JSON for persistence
@@ -423,13 +373,9 @@ class FileTask extends GetStorageMethods {
       progress.totalBytes == progress.bytesTransferred;
 
   /// Get the local path for the file
-  /// For upload tasks, this is filePath
-  /// For download tasks, this is filePath if available
   String get localPath => filePath;
 
   /// Get the remote URL for the file
-  /// For upload tasks, this is downloadUrl if available
-  /// For download tasks, this is downloadUrl
   String? get url => downloadUrl;
 
   /// Get the progress percentage of the task
@@ -442,29 +388,6 @@ class FileTask extends GetStorageMethods {
 
   /// Get the running status of the task
   bool get isRunning => state == FileTaskState.running;
-
-  Stream<FileTask> get run async* {
-    state = FileTaskState.running;
-    if (this.task == null) bytesTransferred = 0;
-
-    final task = this.task!;
-    await for (var snapshot in task.snapshotEvents) {
-      if (snapshot.state != TaskState.running) {
-        state = switch (snapshot.state) {
-          TaskState.paused => FileTaskState.paused,
-          TaskState.canceled => FileTaskState.cancelled,
-          TaskState.error => FileTaskState.error,
-          TaskState.success => FileTaskState.completed,
-          _ => state,
-        };
-      }
-
-      bytesTransferred = snapshot.bytesTransferred;
-      totalBytes = snapshot.totalBytes;
-      yield this;
-      if (state != FileTaskState.completed) break;
-    }
-  }
 
   /// Get the paused status of the task
   bool get isPaused => state == FileTaskState.paused;
@@ -497,7 +420,6 @@ class FileTask extends GetStorageMethods {
     String? errorMessage,
     String? downloadUrl,
     FileGroupInfo? group,
-    Task? firebaseTask,
     MediaMetadata? cachedMetadata,
   }) {
     final copy = FileTask(
@@ -511,7 +433,6 @@ class FileTask extends GetStorageMethods {
       lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
       progress: progress ?? this.progress,
       errorMessage: errorMessage ?? this.errorMessage,
-      firebaseTask: firebaseTask ?? this.firebaseTask(justCheck: true),
       group: group ?? this.group,
     );
     copy.cachedMetadata = cachedMetadata ?? this.cachedMetadata;
@@ -520,7 +441,6 @@ class FileTask extends GetStorageMethods {
 
   FileTask copy() {
     final newTask = FileTask.fromMap(data);
-    newTask.task = task;
     newTask._filePathAndURL = _filePathAndURL;
     return newTask;
   }
@@ -536,20 +456,13 @@ class FileTask extends GetStorageMethods {
   bool operator ==(Object other) =>
       other is FileTask && hashCode == other.hashCode;
 
-  /// if there are changes in the data.
-  ///
-  /// Returns true if path is the same and data is different, otherwise false.
-  /// that is means that data has been changed.
+  /// Returns true if path is the same and data is different.
   @override
   bool operator ^(covariant FileTask other) {
     if (other.hashCode != hashCode) return false;
-
     if (identical(this, other)) return false;
-
     final thisData = Map<String, dynamic>.from(data);
     final otherData = Map<String, dynamic>.from(other.data);
-
-    /// compare the data
     return !mapEquals(thisData, otherData);
   }
 

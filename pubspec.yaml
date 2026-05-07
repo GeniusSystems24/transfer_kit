@@ -1,5 +1,5 @@
 name: transfer_kit
-description: A comprehensive file management solution for Flutter with Firebase Storage - upload, download, progress tracking, intelligent caching, background transfers, and beautiful UI widgets.
+description: A comprehensive provider-agnostic file management solution for Flutter - upload, download, progress tracking, intelligent caching, background transfers, and beautiful UI widgets.
 version: 2.1.0+1
 homepage: https://github.com/geniussystems24/transfer_kit
 
@@ -11,8 +11,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  firebase_storage: ^12.0.0
-  cloud_firestore: ^5.0.0
   get_storage: ^2.1.1
   collection: ^1.18.0
   path_provider: ^2.1.0
@@ -25,6 +23,8 @@ dependencies:
   awesome_notifications: ^0.10.1
   workmanager: ^0.9.0+3
   shared_preferences: ^2.2.0
+
+  http: ^1.0.0
 
   # Metadata extraction dependencies
   crypto: ^3.0.0              # SHA-256 hash

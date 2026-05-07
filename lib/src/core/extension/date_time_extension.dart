@@ -1,9 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-/// Common date-time field tags used in Firestore documents.
+/// Common date-time field tags used in documents.
 ///
-/// These tags are used for automatic Timestamp conversion when
-/// serializing/deserializing documents.
+/// These tags are used for automatic conversion when
+/// serializing/deserializing data.
 enum DateTimeTag {
   createdAt,
   createAt,
@@ -19,11 +17,5 @@ enum DateTimeTag {
 
 /// Extension methods for DateTime conversion.
 extension DateTimeExtension on DateTime {
-  /// Converts a DateTime to a Firestore Timestamp.
-  ///
-  /// Example:
-  /// ```dart
-  /// final timestamp = DateTime.now().toTimestamp();
-  /// ```
-  Timestamp toTimestamp() => Timestamp.fromDate(this);
+  // intentionally empty after removing Firestore-specific toTimestamp()
 }
