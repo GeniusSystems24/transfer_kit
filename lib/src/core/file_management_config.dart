@@ -90,23 +90,23 @@ class TransferKitConfig {
     int? thumbnailMaxWidth,
     int? thumbnailMaxHeight,
     int? waveformSamplesPerSecond,
-  })  : _maxConcurrentDownloads = maxConcurrentDownloads ?? 5,
-        _maxConcurrentUploads = maxConcurrentUploads ?? 3,
-        _streamCleanupDelay = streamCleanupDelay ?? const Duration(seconds: 3),
-        _defaultAutoStart = defaultAutoStart ?? true,
-        _enableLogging = enableLogging ?? false,
-        _retryAttempts = retryAttempts ?? 3,
-        _retryDelay = retryDelay ?? const Duration(seconds: 2),
-        _cacheEnabled = cacheEnabled ?? true,
-        _maxCacheSize = maxCacheSize ?? (500 * 1024 * 1024), // 500 MB
-        _cacheExpiration = cacheExpiration ?? const Duration(days: 7),
-        _autoExtractMetadata = autoExtractMetadata ?? true,
-        _autoExtractSha256 = autoExtractSha256 ?? false,
-        _autoExtractThumbnail = autoExtractThumbnail ?? false,
-        _autoExtractWaveform = autoExtractWaveform ?? false,
-        _thumbnailMaxWidth = thumbnailMaxWidth ?? 200,
-        _thumbnailMaxHeight = thumbnailMaxHeight ?? 200,
-        _waveformSamplesPerSecond = waveformSamplesPerSecond ?? 30;
+  }) : _maxConcurrentDownloads = maxConcurrentDownloads ?? 5,
+       _maxConcurrentUploads = maxConcurrentUploads ?? 3,
+       _streamCleanupDelay = streamCleanupDelay ?? const Duration(seconds: 3),
+       _defaultAutoStart = defaultAutoStart ?? true,
+       _enableLogging = enableLogging ?? false,
+       _retryAttempts = retryAttempts ?? 3,
+       _retryDelay = retryDelay ?? const Duration(seconds: 2),
+       _cacheEnabled = cacheEnabled ?? true,
+       _maxCacheSize = maxCacheSize ?? (500 * 1024 * 1024), // 500 MB
+       _cacheExpiration = cacheExpiration ?? const Duration(days: 7),
+       _autoExtractMetadata = autoExtractMetadata ?? true,
+       _autoExtractSha256 = autoExtractSha256 ?? false,
+       _autoExtractThumbnail = autoExtractThumbnail ?? false,
+       _autoExtractWaveform = autoExtractWaveform ?? false,
+       _thumbnailMaxWidth = thumbnailMaxWidth ?? 200,
+       _thumbnailMaxHeight = thumbnailMaxHeight ?? 200,
+       _waveformSamplesPerSecond = waveformSamplesPerSecond ?? 30;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // INITIALIZATION
@@ -177,7 +177,9 @@ class TransferKitConfig {
       .._retryAttempts = retryAttempts ?? 3
       .._retryDelay = retryDelay ?? const Duration(seconds: 2)
       .._cacheEnabled = cacheEnabled ?? true
-      .._maxCacheSize = maxCacheSize ?? (500 * 1024 * 1024) // 500 MB
+      .._maxCacheSize =
+          maxCacheSize ??
+          (500 * 1024 * 1024) // 500 MB
       .._cacheExpiration = cacheExpiration ?? const Duration(days: 7)
       // Metadata settings
       .._autoExtractMetadata = autoExtractMetadata ?? true
@@ -207,7 +209,10 @@ class TransferKitConfig {
 
   /// The active transfer driver. Throws if [init] has not been called.
   TransferDriver get driver {
-    assert(_driver != null, 'TransferKitConfig.init() must be called with a driver before use.');
+    assert(
+      _driver != null,
+      'TransferKitConfig.init() must be called with a driver before use.',
+    );
     return _driver!;
   }
 

@@ -31,9 +31,17 @@ class DownloadFileWidget extends StatefulWidget {
   final bool autoStart;
 
   final Widget Function(BuildContext context, File file) completedBuilder;
-  final Widget Function(BuildContext context, FileTask? fileTask) loadingBuilder;
-  final Widget Function(BuildContext context, FileTask? fileTask, Object error)? errorBuilder;
-  final Stream<FileTask> Function(String url, String taskId, FileGroupInfo? group, bool autoStart)? downloadTaskStream;
+  final Widget Function(BuildContext context, FileTask? fileTask)
+  loadingBuilder;
+  final Widget Function(BuildContext context, FileTask? fileTask, Object error)?
+  errorBuilder;
+  final Stream<FileTask> Function(
+    String url,
+    String taskId,
+    FileGroupInfo? group,
+    bool autoStart,
+  )?
+  downloadTaskStream;
 
   const DownloadFileWidget({
     super.key,
@@ -55,8 +63,8 @@ class _DownloadFileWidgetState extends State<DownloadFileWidget> {
   FilePathAndURL? _cachedFilePathAndUrl;
   FileTask? _cachedFileTask;
 
-  FilePathAndURL? get localFilePathAndUrl =>
-      _cachedFilePathAndUrl ??= FilePathAndURLRepository.instance.getByUrl(widget.url);
+  FilePathAndURL? get localFilePathAndUrl => _cachedFilePathAndUrl ??=
+      FilePathAndURLRepository.instance.getByUrl(widget.url);
 
   FileTask? get fileTask =>
       _cachedFileTask ??= FileTaskRepository.instance.getTaskByUrl(widget.url);
@@ -69,7 +77,12 @@ class _DownloadFileWidgetState extends State<DownloadFileWidget> {
 
   void _startDownloadIfNeeded() {
     if (widget.autoStart && fileTask == null && localFilePathAndUrl == null) {
-      widget.downloadTaskStream?.call(widget.url, widget.taskId, widget.group, widget.autoStart) ??
+      widget.downloadTaskStream?.call(
+            widget.url,
+            widget.taskId,
+            widget.group,
+            widget.autoStart,
+          ) ??
           TransferKit.instance.downloadTaskStream(
             filePathAndUrl: FilePathAndURL.url(url: widget.url),
             taskId: widget.taskId,
@@ -90,23 +103,35 @@ class _DownloadFileWidgetState extends State<DownloadFileWidget> {
     // Check if task is already complete
     if (fileTask?.isComplete ?? false) {
       Logger().d('Download task already complete');
-      return widget.completedBuilder(context, File(fileTask!.filePathAndURL.path));
+      return widget.completedBuilder(
+        context,
+        File(fileTask!.filePathAndURL.path),
+      );
     }
 
     return StreamBuilder<FileTask?>(
       initialData: fileTask,
-      stream: FileTaskRepository.instance.streamFirstWhereOrNull((task) => task.url == widget.url),
+      stream: FileTaskRepository.instance.streamFirstWhereOrNull(
+        (task) => task.url == widget.url,
+      ),
       builder: (context, asyncSnapshot) {
         final currentTask = asyncSnapshot.data;
 
         if (asyncSnapshot.hasError && widget.errorBuilder != null) {
-          return widget.errorBuilder!(context, currentTask, asyncSnapshot.error!);
+          return widget.errorBuilder!(
+            context,
+            currentTask,
+            asyncSnapshot.error!,
+          );
         }
 
         if (currentTask?.isComplete ?? false) {
           _cachedFilePathAndUrl = currentTask!.filePathAndURL;
           _cachedFileTask = currentTask;
-          return widget.completedBuilder(context, File(currentTask.filePathAndURL.path));
+          return widget.completedBuilder(
+            context,
+            File(currentTask.filePathAndURL.path),
+          );
         }
 
         return widget.loadingBuilder(context, currentTask);

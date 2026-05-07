@@ -31,10 +31,7 @@ Future<(FilePathAndURL, File)> _seedEntry({
     cacheKey: cacheKey,
     expiresAt: expiresAt,
     metadata: metadata,
-  ).copyWith(
-    createdAt: now,
-    updatedAt: now,
-  );
+  ).copyWith(createdAt: now, updatedAt: now);
   // Point path at real temp file
   entry.data[FilePathAndURL.pathTag] = file.path;
 
@@ -51,9 +48,9 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.flutter.io/path_provider'),
-      (MethodCall call) async => Directory.systemTemp.path,
-    );
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (MethodCall call) async => Directory.systemTemp.path,
+        );
     await GetStorage.init();
     await AppDirectory.init(cacheDirectory: Directory.systemTemp.path);
   });
@@ -82,8 +79,9 @@ void main() {
     });
 
     test('cache_hit_verifies_file_exists_on_disk', () async {
-      final (entry, file) =
-          await _seedEntry(url: 'https://example.com/file2.jpg');
+      final (entry, file) = await _seedEntry(
+        url: 'https://example.com/file2.jpg',
+      );
 
       // File exists → cache hit
       final hit = await FilePathAndURLRepository.instance
@@ -99,8 +97,7 @@ void main() {
     });
 
     test('cached_task_emits_cached_state', () async {
-      final (entry, _) =
-          await _seedEntry(url: 'https://example.com/file3.jpg');
+      final (entry, _) = await _seedEntry(url: 'https://example.com/file3.jpg');
 
       // A cache hit is retrievable from the repository
       final hit = await FilePathAndURLRepository.instance
@@ -114,7 +111,11 @@ void main() {
     });
 
     test('cached_metadata_returned_on_cache_hit', () async {
-      const meta = MediaMetadata(mimeType: 'image/jpeg', width: 800, height: 600);
+      const meta = MediaMetadata(
+        mimeType: 'image/jpeg',
+        width: 800,
+        height: 600,
+      );
       final (entry, _) = await _seedEntry(
         url: 'https://example.com/image.jpg',
         metadata: meta,
@@ -139,9 +140,9 @@ void main() {
       // Lookup via cacheKey with a different URL → should still find entry
       final result = await FilePathAndURLRepository.instance
           .getCachedDownloadFilePathAndURL(
-        url: 'https://example.com/signed?token=xyz',
-        cacheKey: 'media/photo_001.jpg',
-      );
+            url: 'https://example.com/signed?token=xyz',
+            cacheKey: 'media/photo_001.jpg',
+          );
 
       expect(result, isNotNull);
       expect(result!.cacheKey, equals('media/photo_001.jpg'));
@@ -154,8 +155,9 @@ void main() {
 
   group('US2 — Stale Cache Detection and Recovery', () {
     test('stale_entry_treated_as_cache_miss', () async {
-      final (entry, file) =
-          await _seedEntry(url: 'https://example.com/stale.jpg');
+      final (entry, file) = await _seedEntry(
+        url: 'https://example.com/stale.jpg',
+      );
       await file.delete();
 
       final result = await FilePathAndURLRepository.instance
@@ -165,31 +167,32 @@ void main() {
     });
 
     test('stale_entry_removed_from_index', () async {
-      final (entry, file) =
-          await _seedEntry(url: 'https://example.com/stale2.jpg');
+      final (entry, file) = await _seedEntry(
+        url: 'https://example.com/stale2.jpg',
+      );
       await file.delete();
 
-      await FilePathAndURLRepository.instance
-          .getCachedDownloadFilePathAndURL(url: entry.url!);
-
-      expect(
-        FilePathAndURLRepository.instance.getByUrl(entry.url!),
-        isNull,
+      await FilePathAndURLRepository.instance.getCachedDownloadFilePathAndURL(
+        url: entry.url!,
       );
+
+      expect(FilePathAndURLRepository.instance.getByUrl(entry.url!), isNull);
     });
 
     test('repair_stale_entries', () async {
-      final (_, file1) =
-          await _seedEntry(url: 'https://example.com/stale3.jpg');
-      final (_, file2) =
-          await _seedEntry(url: 'https://example.com/stale4.jpg');
+      final (_, file1) = await _seedEntry(
+        url: 'https://example.com/stale3.jpg',
+      );
+      final (_, file2) = await _seedEntry(
+        url: 'https://example.com/stale4.jpg',
+      );
       await _seedEntry(url: 'https://example.com/valid.jpg');
 
       await file1.delete();
       await file2.delete();
 
-      final repairedCount =
-          await FilePathAndURLRepository.instance.repairStaleEntries();
+      final repairedCount = await FilePathAndURLRepository.instance
+          .repairStaleEntries();
 
       expect(repairedCount, equals(2));
       expect(FilePathAndURLRepository.instance.value.length, equals(1));
@@ -208,8 +211,9 @@ void main() {
 
       // After a forceRefresh the index entry is gone, so the repository
       // returns null — no cached result is ever delivered
-      final (entry, file) =
-          await _seedEntry(url: 'https://example.com/refresh-state.jpg');
+      final (entry, file) = await _seedEntry(
+        url: 'https://example.com/refresh-state.jpg',
+      );
       if (await file.exists()) await file.delete();
       FilePathAndURLRepository.instance.remove(entry);
 
@@ -219,23 +223,22 @@ void main() {
     });
 
     test('forced_refresh_removes_existing_index_entry', () async {
-      final (entry, file) =
-          await _seedEntry(url: 'https://example.com/refresh2.jpg');
+      final (entry, file) = await _seedEntry(
+        url: 'https://example.com/refresh2.jpg',
+      );
 
       // Simulate forceRefresh: delete local file and remove from index
       if (await file.exists()) await file.delete();
       FilePathAndURLRepository.instance.remove(entry);
 
-      expect(
-        FilePathAndURLRepository.instance.getByUrl(entry.url!),
-        isNull,
-      );
+      expect(FilePathAndURLRepository.instance.getByUrl(entry.url!), isNull);
       expect(file.existsSync(), isFalse);
     });
 
     test('forced_refresh_deletes_local_file_when_present', () async {
-      final (entry, file) =
-          await _seedEntry(url: 'https://example.com/refresh3.jpg');
+      final (entry, file) = await _seedEntry(
+        url: 'https://example.com/refresh3.jpg',
+      );
 
       expect(file.existsSync(), isTrue);
 
@@ -253,8 +256,7 @@ void main() {
 
   group('US4 — Cache Metadata and Index Reliability', () {
     test('last_accessed_at_updated_on_cache_hit', () async {
-      final (entry, _) =
-          await _seedEntry(url: 'https://example.com/meta1.jpg');
+      final (entry, _) = await _seedEntry(url: 'https://example.com/meta1.jpg');
       final before = entry.lastAccessedAt;
 
       // Small delay to ensure timestamp differs
@@ -274,8 +276,9 @@ void main() {
     test('updated_at_set_on_download_completion', () async {
       // Simulates what firebase_file_repository sets on onComplete
       final now = DateTime.now();
-      final entry = FilePathAndURL.url(url: 'https://example.com/complete.jpg')
-          .copyWith(createdAt: now, updatedAt: now);
+      final entry = FilePathAndURL.url(
+        url: 'https://example.com/complete.jpg',
+      ).copyWith(createdAt: now, updatedAt: now);
 
       expect(entry.updatedAt, isNotNull);
       expect(entry.createdAt, isNotNull);
@@ -310,7 +313,8 @@ void main() {
         expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
 
-      final removed = await FilePathAndURLRepository.instance.clearExpiredEntries();
+      final removed = await FilePathAndURLRepository.instance
+          .clearExpiredEntries();
 
       expect(removed, equals(1));
       expect(FilePathAndURLRepository.instance.value.length, equals(1));
@@ -327,7 +331,8 @@ void main() {
         expiresAt: DateTime.now().add(const Duration(days: 7)),
       );
 
-      final removed = await FilePathAndURLRepository.instance.clearExpiredEntries();
+      final removed = await FilePathAndURLRepository.instance
+          .clearExpiredEntries();
 
       expect(removed, equals(0));
       expect(FilePathAndURLRepository.instance.value.length, equals(2));
@@ -343,10 +348,7 @@ void main() {
           .getCachedDownloadFilePathAndURL(url: entry.url!);
 
       expect(result, isNull);
-      expect(
-        FilePathAndURLRepository.instance.getByUrl(entry.url!),
-        isNull,
-      );
+      expect(FilePathAndURLRepository.instance.getByUrl(entry.url!), isNull);
     });
   });
 
@@ -356,12 +358,12 @@ void main() {
 
   group('US5 — Cache Cleanup Operations', () {
     test('delete_single_cache_entry', () async {
-      final (entry, file) =
-          await _seedEntry(url: 'https://example.com/del1.jpg');
+      final (entry, file) = await _seedEntry(
+        url: 'https://example.com/del1.jpg',
+      );
 
       // Simulate clearCache(url)
-      final found =
-          FilePathAndURLRepository.instance.getByUrl(entry.url!);
+      final found = FilePathAndURLRepository.instance.getByUrl(entry.url!);
       if (found != null) {
         final f = File(found.path);
         if (await f.exists()) await f.delete();
@@ -369,23 +371,17 @@ void main() {
       }
 
       expect(file.existsSync(), isFalse);
-      expect(
-        FilePathAndURLRepository.instance.getByUrl(entry.url!),
-        isNull,
-      );
+      expect(FilePathAndURLRepository.instance.getByUrl(entry.url!), isNull);
     });
 
     test('delete_set_of_cache_entries', () async {
-      final (e1, f1) =
-          await _seedEntry(url: 'https://example.com/batch1.jpg');
-      final (e2, f2) =
-          await _seedEntry(url: 'https://example.com/batch2.jpg');
+      final (e1, f1) = await _seedEntry(url: 'https://example.com/batch1.jpg');
+      final (e2, f2) = await _seedEntry(url: 'https://example.com/batch2.jpg');
       await _seedEntry(url: 'https://example.com/batch3.jpg');
 
       // Simulate clearCacheForUrls({url1, url2})
       for (final entry in [e1, e2]) {
-        final found =
-            FilePathAndURLRepository.instance.getByUrl(entry.url!);
+        final found = FilePathAndURLRepository.instance.getByUrl(entry.url!);
         if (found != null) {
           final f = File(found.path);
           if (await f.exists()) await f.delete();
@@ -405,10 +401,10 @@ void main() {
       await _seedEntry(url: 'https://example.com/cleanup2.jpg');
 
       // repairStaleEntries and clearExpiredEntries must complete without error
-      final repaired =
-          await FilePathAndURLRepository.instance.repairStaleEntries();
-      final cleared =
-          await FilePathAndURLRepository.instance.clearExpiredEntries();
+      final repaired = await FilePathAndURLRepository.instance
+          .repairStaleEntries();
+      final cleared = await FilePathAndURLRepository.instance
+          .clearExpiredEntries();
 
       expect(repaired, isA<int>());
       expect(cleared, isA<int>());

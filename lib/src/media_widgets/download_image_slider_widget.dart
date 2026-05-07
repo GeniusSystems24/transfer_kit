@@ -70,8 +70,9 @@ class _DownloadImageSliderWidgetState extends State<DownloadImageSliderWidget> {
       child: Container(
         height: widget.height,
         clipBehavior: Clip.antiAlias,
-        decoration:
-            BoxDecoration(borderRadius: BorderRadius.circular(widget.radius)),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(widget.radius),
+        ),
         child: Stack(
           children: [
             if (hasImages)
@@ -95,7 +96,9 @@ class _DownloadImageSliderWidgetState extends State<DownloadImageSliderWidget> {
                         width: double.infinity,
                         height: widget.height ?? double.infinity,
                         alignment: Alignment.center,
-                        child: const MediaProgressIndicator(indeterminate: true),
+                        child: const MediaProgressIndicator(
+                          indeterminate: true,
+                        ),
                       ),
                     ),
                   );
@@ -147,7 +150,9 @@ class _DownloadImageSliderWidgetState extends State<DownloadImageSliderWidget> {
                         shape: BoxShape.circle,
                         color: _currentIndex == index
                             ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                            : theme.colorScheme.onSurface.withValues(
+                                alpha: 0.4,
+                              ),
                       ),
                     ),
                   ),

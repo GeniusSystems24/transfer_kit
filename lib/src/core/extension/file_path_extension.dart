@@ -79,7 +79,8 @@ class AppDirectory {
   Future<void> _getCachedDirectory({String? overridePath}) async {
     if (cachedDir != null) return;
 
-    final dirPath = overridePath ??
+    final dirPath =
+        overridePath ??
         '${(await _getApplicationSupportDirectory()).path}/cached';
     cachedDir = Directory(dirPath);
 

@@ -49,7 +49,10 @@ class FileDownloadProgressIndicator extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(color: Colors.black.withValues(alpha: .6), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: .6),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
@@ -61,14 +64,20 @@ class FileDownloadProgressIndicator extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(color: fileInfo.color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(
+                      color: fileInfo.color.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Icon(fileInfo.icon, color: fileInfo.color, size: 20),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       task.fileName,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -76,9 +85,16 @@ class FileDownloadProgressIndicator extends StatelessWidget {
                   if (onCancel != null && !isComplete)
                     IconButton(
                       onPressed: onCancel,
-                      icon: const Icon(Icons.close, color: Colors.white60, size: 18),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white60,
+                        size: 18,
+                      ),
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                      constraints: const BoxConstraints(
+                        minWidth: 24,
+                        minHeight: 24,
+                      ),
                     ),
                 ],
               ),
@@ -97,23 +113,45 @@ class FileDownloadProgressIndicator extends StatelessWidget {
                         child: SizedBox(
                           width: 26,
                           height: 26,
-                          child:
-                              isComplete
-                                  ? Container(
-                                    decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.2), shape: BoxShape.circle),
-                                    child: const Icon(Icons.check, color: Colors.green, size: 18),
-                                  )
-                                  : CircularProgressIndicator(
-                                        value: hasError ? 1.0 : task.progressPercentage / 100,
-                                        backgroundColor: Theme.of(context).colorScheme.outline.withValues(alpha: .3),
-                                        valueColor: AlwaysStoppedAnimation<Color>(hasError ? Colors.red : Colors.white),
-                                        strokeWidth: 3,
-                                      )
-                                      .animate(onPlay: (controller) => controller.repeat())
-                                      .shimmer(duration: const Duration(seconds: 1), delay: const Duration(milliseconds: 500)),
+                          child: isComplete
+                              ? Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: Colors.green,
+                                    size: 18,
+                                  ),
+                                )
+                              : CircularProgressIndicator(
+                                      value: hasError
+                                          ? 1.0
+                                          : task.progressPercentage / 100,
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .outline
+                                          .withValues(alpha: .3),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        hasError ? Colors.red : Colors.white,
+                                      ),
+                                      strokeWidth: 3,
+                                    )
+                                    .animate(
+                                      onPlay: (controller) =>
+                                          controller.repeat(),
+                                    )
+                                    .shimmer(
+                                      duration: const Duration(seconds: 1),
+                                      delay: const Duration(milliseconds: 500),
+                                    ),
                         ),
                       ),
-                      if (hasError) const Center(child: Icon(Icons.error, color: Colors.red, size: 18)),
+                      if (hasError)
+                        const Center(
+                          child: Icon(Icons.error, color: Colors.red, size: 18),
+                        ),
                     ],
                   ),
                 ),
@@ -127,18 +165,27 @@ class FileDownloadProgressIndicator extends StatelessWidget {
                         children: [
                           Text(
                             '${task.downloadedSizeMB.toStringAsFixed(1)} MB',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                           Text(
                             ' / ${task.totalSizeMB.toStringAsFixed(1)} MB',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.white70),
                           ),
                         ],
                       ),
                     if (showDetailedInfo && !isComplete)
                       Text(
-                        isRunning ? '${task.progressPercentage.toStringAsFixed(0)}% • 1.2 MB/s' : _getStatusText(),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white60),
+                        isRunning
+                            ? '${task.progressPercentage.toStringAsFixed(0)}% • 1.2 MB/s'
+                            : _getStatusText(),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.white60),
                       ),
                   ],
                 ),
@@ -149,7 +196,10 @@ class FileDownloadProgressIndicator extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: task.progressPercentage / 100),
+                  tween: Tween<double>(
+                    begin: 0,
+                    end: task.progressPercentage / 100,
+                  ),
                   duration: const Duration(milliseconds: 300),
                   builder: (context, value, _) {
                     return LinearProgressIndicator(
@@ -192,9 +242,19 @@ class FileDownloadProgressIndicator extends StatelessWidget {
   }
 
   _FileTypeInfo _getFileTypeInfo(String fileName) {
-    final fileExtension = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : '';
+    final fileExtension = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : '';
 
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].contains(fileExtension)) {
+    if ([
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp',
+      'svg',
+      'bmp',
+    ].contains(fileExtension)) {
       return _FileTypeInfo(Icons.image, Colors.blue);
     } else if (fileExtension == 'pdf') {
       return _FileTypeInfo(Icons.picture_as_pdf, Colors.red);
@@ -202,7 +262,14 @@ class FileDownloadProgressIndicator extends StatelessWidget {
       return _FileTypeInfo(Icons.description, Colors.blue);
     } else if (['xls', 'xlsx', 'csv'].contains(fileExtension)) {
       return _FileTypeInfo(Icons.table_chart, Colors.green);
-    } else if (['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv'].contains(fileExtension)) {
+    } else if ([
+      'mp4',
+      'mov',
+      'avi',
+      'mkv',
+      'webm',
+      'flv',
+    ].contains(fileExtension)) {
       return _FileTypeInfo(Icons.video_file, Colors.purple);
     } else if (['mp3', 'wav', 'ogg', 'flac', 'm4a'].contains(fileExtension)) {
       return _FileTypeInfo(Icons.audio_file, Colors.amber);

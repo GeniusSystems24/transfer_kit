@@ -26,9 +26,7 @@ class MultiUploadFileTask {
 
   /// List of completed file tasks
   List<FileTask> get completedTasks => tasks
-      .where(
-        (task) => task.isComplete || task.downloadUrl?.isNotEmpty == true,
-      )
+      .where((task) => task.isComplete || task.downloadUrl?.isNotEmpty == true)
       .toList();
 
   /// Number of files that were retrieved from cache instead of uploaded

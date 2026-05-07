@@ -286,8 +286,10 @@ class _TaskManagerScreenState extends State<TaskManagerScreen>
                     value: task.progressPercentage / 100,
                     minHeight: 6,
                     borderRadius: BorderRadius.circular(3),
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.1),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       task.isComplete ? Colors.green : stateColor,
                     ),

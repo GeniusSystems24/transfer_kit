@@ -110,7 +110,7 @@ class FileLoadingCard extends StatefulWidget {
   /// )
   /// ```
   final Widget? Function(BuildContext context, FileTask? progress)?
-      downloadingWidget;
+  downloadingWidget;
 
   /// Widget to display task controls
   final Widget Function(BuildContext context, FileTask task)? taskControlWidget;
@@ -227,24 +227,24 @@ class _FileLoadingCardState extends State<FileLoadingCard>
       child: widget.useTaskControl
           ? _buildTaskControlledDownload(context)
           : (widget.useStream
-              ? _StreamLoadingContent(
-                  url: widget.url,
-                  onLoaded: widget.onLoaded,
-                  onError: widget.onError,
-                  checkCacheFirst: widget.checkCacheFirst,
-                  downloadingWidget: widget.downloadingWidget,
-                  controller: _controller,
-                  initialTaskValue: widget.initialTaskValue,
-                )
-              : _FutureLoadingContent(
-                  url: widget.url,
-                  onLoaded: widget.onLoaded,
-                  onError: widget.onError,
-                  checkCacheFirst: widget.checkCacheFirst,
-                  controller: _controller,
-                  initialTaskValue: widget.initialTaskValue,
-                  downloadingWidget: widget.downloadingWidget,
-                )),
+                ? _StreamLoadingContent(
+                    url: widget.url,
+                    onLoaded: widget.onLoaded,
+                    onError: widget.onError,
+                    checkCacheFirst: widget.checkCacheFirst,
+                    downloadingWidget: widget.downloadingWidget,
+                    controller: _controller,
+                    initialTaskValue: widget.initialTaskValue,
+                  )
+                : _FutureLoadingContent(
+                    url: widget.url,
+                    onLoaded: widget.onLoaded,
+                    onError: widget.onError,
+                    checkCacheFirst: widget.checkCacheFirst,
+                    controller: _controller,
+                    initialTaskValue: widget.initialTaskValue,
+                    downloadingWidget: widget.downloadingWidget,
+                  )),
     );
   }
 
@@ -262,33 +262,34 @@ class _FileLoadingCardState extends State<FileLoadingCard>
       builder: (context, snapshot) {
         if (!_isInitialized) {
           return Center(
-            child: widget.downloadingWidget?.call(context, null) ??
+            child:
+                widget.downloadingWidget?.call(context, null) ??
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primaryContainer
-                            .withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: SizedBox(
-                          width: 30,
-                          height: 30,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primaryContainer
+                                .withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: SizedBox(
+                              width: 30,
+                              height: 30,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    )
+                        )
                         .animate(onPlay: (controller) => controller.repeat())
                         .shimmer(
                           duration: 1200.ms,
@@ -305,14 +306,13 @@ class _FileLoadingCardState extends State<FileLoadingCard>
                         ),
                     const SizedBox(height: 16),
                     Text(
-                      'Preparing to download...',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.2,
-                          ),
-                    )
+                          'Preparing to download...',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.2,
+                              ),
+                        )
                         .animate()
                         .fadeIn(duration: 600.ms)
                         .slideY(begin: 0.2, end: 0),
@@ -341,19 +341,19 @@ class _FileLoadingCardState extends State<FileLoadingCard>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.error.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.error_outline,
-                        color: Theme.of(context).colorScheme.error,
-                        size: 42,
-                      ),
-                    )
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.error.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.error_outline,
+                            color: Theme.of(context).colorScheme.error,
+                            size: 42,
+                          ),
+                        )
                         .animate()
                         .scale(duration: 400.ms, curve: Curves.easeOutBack)
                         .shimmer(
@@ -367,17 +367,16 @@ class _FileLoadingCardState extends State<FileLoadingCard>
                     Text(
                       'Error Occurred',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: Theme.of(context).colorScheme.error,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '${snapshot.error}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
@@ -431,10 +430,10 @@ class _FileLoadingCardState extends State<FileLoadingCard>
                         ),
                       ),
                     ).animate().scale(
-                          delay: 200.ms,
-                          duration: 300.ms,
-                          curve: Curves.easeOut,
-                        ),
+                      delay: 200.ms,
+                      duration: 300.ms,
+                      curve: Curves.easeOut,
+                    ),
                   ],
                 ),
               );
@@ -472,70 +471,67 @@ class _FileLoadingCardState extends State<FileLoadingCard>
         children: [
           // File info row
           Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      _getStatusColor(task).withValues(alpha: 0.8),
-                      _getStatusColor(task).withValues(alpha: 0.5),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.file_download_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getFileName(task),
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                      overflow: TextOverflow.ellipsis,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _getStatusColor(task).withValues(alpha: 0.8),
+                          _getStatusColor(task).withValues(alpha: 0.5),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                    child: const Icon(
+                      Icons.file_download_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.access_time_rounded,
-                          size: 14,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant
-                              .withValues(alpha: 0.7),
-                        ),
-                        const SizedBox(width: 4),
                         Text(
-                          _getFormattedDate(task),
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant
-                                    .withValues(alpha: 0.7),
-                              ),
+                          _getFileName(task),
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 14,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant
+                                  .withValues(alpha: 0.7),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _getFormattedDate(task),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant
+                                        .withValues(alpha: 0.7),
+                                  ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              _buildStatusBadge(context, task),
-            ],
-          )
+                  ),
+                  _buildStatusBadge(context, task),
+                ],
+              )
               .animate(controller: _animationController)
               .fade(duration: 400.ms)
               .slideY(begin: 0.2, end: 0),
@@ -544,145 +540,148 @@ class _FileLoadingCardState extends State<FileLoadingCard>
 
           // Progress bar with animation
           TweenAnimationBuilder<double>(
-            tween: Tween<double>(
-              begin: 0,
-              end: task.progressPercentage / 100,
-            ),
-            duration: const Duration(milliseconds: 800),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, _) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Progress percentage and size
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                tween: Tween<double>(
+                  begin: 0,
+                  end: task.progressPercentage / 100,
+                ),
+                duration: const Duration(milliseconds: 800),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, _) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      RichText(
-                        text: TextSpan(
-                          style: DefaultTextStyle.of(context).style,
-                          children: [
-                            TextSpan(
-                              text:
-                                  '${task.progressPercentage.toStringAsFixed(1)}%',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: _getStatusColor(task),
-                              ),
+                      // Progress percentage and size
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          RichText(
+                            text: TextSpan(
+                              style: DefaultTextStyle.of(context).style,
+                              children: [
+                                TextSpan(
+                                  text:
+                                      '${task.progressPercentage.toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: _getStatusColor(task),
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' downloaded',
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
-                            TextSpan(
-                              text: ' downloaded',
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '${FileUtils.formatSize(task.bytesTransferred)} / ${FileUtils.formatSize(task.totalBytes)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Progress bar
-                  Stack(
-                    children: [
-                      // Background
-                      Container(
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      // Progress bar
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        height: 10,
-                        width: MediaQuery.of(context).size.width * value,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              _getStatusColor(task),
-                              _getStatusColor(task).withValues(alpha: 0.7),
-                            ],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
                           ),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: _getStatusColor(
-                                task,
-                              ).withValues(alpha: 0.3),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
+                          Text(
+                            '${FileUtils.formatSize(task.bytesTransferred)} / ${FileUtils.formatSize(task.totalBytes)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      // Animated glow effect for running tasks
-                      if (task.isRunning)
-                        Positioned(
-                          left: MediaQuery.of(context).size.width * value - 20,
-                          top: 0,
-                          bottom: 0,
-                          child: Container(
-                            width: 20,
+
+                      const SizedBox(height: 8),
+
+                      // Progress bar
+                      Stack(
+                        children: [
+                          // Background
+                          Container(
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          // Progress bar
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            height: 10,
+                            width: MediaQuery.of(context).size.width * value,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  _getStatusColor(
-                                    task,
-                                  ).withValues(alpha: 0),
-                                  _getStatusColor(
-                                    task,
-                                  ).withValues(alpha: 0.5),
-                                  _getStatusColor(
-                                    task,
-                                  ).withValues(alpha: 0),
+                                  _getStatusColor(task),
+                                  _getStatusColor(task).withValues(alpha: 0.7),
                                 ],
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
                               ),
                               borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _getStatusColor(
+                                    task,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                           ),
-                        )
-                            .animate(
-                              onPlay: (controller) => controller.repeat(
-                                period: const Duration(seconds: 2),
-                              ),
-                            )
-                            .custom(
-                              duration: 2000.ms,
-                              builder: (context, value, child) =>
-                                  Transform.translate(
-                                offset: Offset(20 * value, 0),
-                                child: child,
-                              ),
-                            ),
+                          // Animated glow effect for running tasks
+                          if (task.isRunning)
+                            Positioned(
+                                  left:
+                                      MediaQuery.of(context).size.width *
+                                          value -
+                                      20,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    width: 20,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          _getStatusColor(
+                                            task,
+                                          ).withValues(alpha: 0),
+                                          _getStatusColor(
+                                            task,
+                                          ).withValues(alpha: 0.5),
+                                          _getStatusColor(
+                                            task,
+                                          ).withValues(alpha: 0),
+                                        ],
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                )
+                                .animate(
+                                  onPlay: (controller) => controller.repeat(
+                                    period: const Duration(seconds: 2),
+                                  ),
+                                )
+                                .custom(
+                                  duration: 2000.ms,
+                                  builder: (context, value, child) =>
+                                      Transform.translate(
+                                        offset: Offset(20 * value, 0),
+                                        child: child,
+                                      ),
+                                ),
+                        ],
+                      ),
                     ],
-                  ),
-                ],
-              );
-            },
-          )
+                  );
+                },
+              )
               .animate(controller: _animationController)
               .fade(delay: 200.ms, duration: 400.ms)
               .slideY(begin: 0.3, end: 0),
@@ -838,82 +837,85 @@ class _FileLoadingCardState extends State<FileLoadingCard>
     return AnimatedScale(
       scale: 1.0,
       duration: const Duration(milliseconds: 150),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
-          splashColor: color.withValues(alpha: 0.1),
-          highlightColor: color.withValues(alpha: 0.05),
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: isOutlined
-                  ? null
-                  : LinearGradient(
-                      colors: [
-                        color,
-                        Color.lerp(color, Colors.white, 0.2) ?? color,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+      child:
+          Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onPressed,
+                  borderRadius: BorderRadius.circular(12),
+                  splashColor: color.withValues(alpha: 0.1),
+                  highlightColor: color.withValues(alpha: 0.05),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: isOutlined
+                          ? null
+                          : LinearGradient(
+                              colors: [
+                                color,
+                                Color.lerp(color, Colors.white, 0.2) ?? color,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      color: isOutlined ? Colors.transparent : null,
+                      borderRadius: BorderRadius.circular(12),
+                      border: isOutlined
+                          ? Border.all(
+                              color: color.withValues(alpha: 0.8),
+                              width: 1.5,
+                            )
+                          : null,
+                      boxShadow: isOutlined
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
-              color: isOutlined ? Colors.transparent : null,
-              borderRadius: BorderRadius.circular(12),
-              border: isOutlined
-                  ? Border.all(
-                      color: color.withValues(alpha: 0.8),
-                      width: 1.5,
-                    )
-                  : null,
-              boxShadow: isOutlined
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
                       ),
-                    ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 10,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    size: 18,
-                    color: isOutlined ? color : Colors.white,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: isOutlined ? color : Colors.white,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            icon,
+                            size: 18,
+                            color: isOutlined ? color : Colors.white,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            label,
+                            style: TextStyle(
+                              color: isOutlined ? color : Colors.white,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
+                ),
+              )
+              .animate(
+                onPlay: (controller) => controller.repeat(
+                  reverse: true,
+                  period: const Duration(seconds: 10),
+                ),
+              )
+              .shimmer(
+                delay: 3000.ms,
+                duration: 1800.ms,
+                color: isOutlined
+                    ? color.withValues(alpha: 0.3)
+                    : Colors.white24,
               ),
-            ),
-          ),
-        ),
-      )
-          .animate(
-            onPlay: (controller) => controller.repeat(
-              reverse: true,
-              period: const Duration(seconds: 10),
-            ),
-          )
-          .shimmer(
-            delay: 3000.ms,
-            duration: 1800.ms,
-            color: isOutlined ? color.withValues(alpha: 0.3) : Colors.white24,
-          ),
     );
   }
 
@@ -1051,7 +1053,6 @@ class _FileLoadingCardState extends State<FileLoadingCard>
       return 'Just now';
     }
   }
-
 }
 
 /// Widget that handles file loading using Future (getFile)
@@ -1063,7 +1064,7 @@ class _FutureLoadingContent extends StatelessWidget {
   final TransferKit controller;
   final FileTask? initialTaskValue;
   final Widget? Function(BuildContext context, FileTask? progress)?
-      downloadingWidget;
+  downloadingWidget;
 
   const _FutureLoadingContent({
     required this.url,
@@ -1079,7 +1080,10 @@ class _FutureLoadingContent extends StatelessWidget {
   Widget build(BuildContext context) {
     // If we have an initialTaskValue that's complete, show it immediately
     if (initialTaskValue != null && initialTaskValue!.isComplete) {
-      return onLoaded(initialTaskValue!).animate().fade(duration: 300.ms).scale(
+      return onLoaded(initialTaskValue!)
+          .animate()
+          .fade(duration: 300.ms)
+          .scale(
             begin: const Offset(0.95, 0.95),
             end: const Offset(1.0, 1.0),
             duration: 300.ms,
@@ -1102,9 +1106,9 @@ class _FutureLoadingContent extends StatelessWidget {
                       color: Theme.of(context).colorScheme.error,
                       size: 48,
                     ).animate().scale(
-                          duration: 400.ms,
-                          curve: Curves.easeOutBack,
-                        ),
+                      duration: 400.ms,
+                      curve: Curves.easeOutBack,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Error: ${snapshot.error}',
@@ -1130,7 +1134,8 @@ class _FutureLoadingContent extends StatelessWidget {
           );
 
           return Center(
-            child: downloadingWidget?.call(context, loadingTask) ??
+            child:
+                downloadingWidget?.call(context, loadingTask) ??
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -1152,7 +1157,10 @@ class _FutureLoadingContent extends StatelessWidget {
           );
         }
 
-        return onLoaded(snapshot.data!).animate().fade(duration: 300.ms).scale(
+        return onLoaded(snapshot.data!)
+            .animate()
+            .fade(duration: 300.ms)
+            .scale(
               begin: const Offset(0.95, 0.95),
               end: const Offset(1.0, 1.0),
               duration: 300.ms,
@@ -1211,7 +1219,7 @@ class _StreamLoadingContent extends StatelessWidget {
   final TransferKit controller;
   final FileTask? initialTaskValue;
   final Widget? Function(BuildContext context, FileTask? progress)?
-      downloadingWidget;
+  downloadingWidget;
 
   const _StreamLoadingContent({
     required this.url,
@@ -1242,9 +1250,9 @@ class _StreamLoadingContent extends StatelessWidget {
                       color: Theme.of(context).colorScheme.error,
                       size: 48,
                     ).animate().scale(
-                          duration: 400.ms,
-                          curve: Curves.easeOutBack,
-                        ),
+                      duration: 400.ms,
+                      curve: Curves.easeOutBack,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Error: ${snapshot.error}',
@@ -1270,7 +1278,8 @@ class _StreamLoadingContent extends StatelessWidget {
           );
 
           return Center(
-            child: downloadingWidget?.call(context, loadingTask) ??
+            child:
+                downloadingWidget?.call(context, loadingTask) ??
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -1342,8 +1351,8 @@ class _StreamLoadingContent extends StatelessWidget {
                                   progress.isRunning
                                       ? 'Downloading'
                                       : progress.isPaused
-                                          ? 'Paused'
-                                          : 'Waiting',
+                                      ? 'Paused'
+                                      : 'Waiting',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Theme.of(
@@ -1395,7 +1404,10 @@ class _StreamLoadingContent extends StatelessWidget {
               );
         }
 
-        return onLoaded(progress).animate().fade(duration: 300.ms).scale(
+        return onLoaded(progress)
+            .animate()
+            .fade(duration: 300.ms)
+            .scale(
               begin: const Offset(0.95, 0.95),
               end: const Offset(1.0, 1.0),
               duration: 300.ms,

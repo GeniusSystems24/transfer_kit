@@ -48,10 +48,12 @@ class FileTaskList extends StatefulWidget {
   final Widget Function(BuildContext context, FileTask task)? itemBuilder;
 
   /// Builder function to add a custom header to the list
-  final Widget Function(BuildContext context, List<FileTask> tasks)? headerListBuilder;
+  final Widget Function(BuildContext context, List<FileTask> tasks)?
+  headerListBuilder;
 
   /// Builder function to add a custom footer to the list
-  final Widget Function(BuildContext context, List<FileTask> tasks)? footerListBuilder;
+  final Widget Function(BuildContext context, List<FileTask> tasks)?
+  footerListBuilder;
 
   /// Custom file controller to use instead of creating a new one
   /// If not provided, a new one will be created and initialized
@@ -86,7 +88,8 @@ class FileTaskList extends StatefulWidget {
   State<FileTaskList> createState() => _FileTaskListState();
 }
 
-class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderStateMixin {
+class _FileTaskListState extends State<FileTaskList>
+    with SingleTickerProviderStateMixin {
   late final TransferKit _controller;
   late final AnimationController _animationController;
   final ScrollController _scrollController = ScrollController();
@@ -96,7 +99,10 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
     super.initState();
     // Use provided controller or create a new one
     _controller = widget.controller ?? TransferKit.instance;
-    _animationController = AnimationController(duration: const Duration(milliseconds: 600), vsync: this);
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
 
     // Start animation after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -118,7 +124,10 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Theme.of(context).colorScheme.surface, Theme.of(context).colorScheme.surfaceContainerLowest],
+          colors: [
+            Theme.of(context).colorScheme.surface,
+            Theme.of(context).colorScheme.surfaceContainerLowest,
+          ],
           stops: const [0.0, 1.0],
         ),
         borderRadius: BorderRadius.circular(12),
@@ -132,40 +141,51 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    widget.title,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                  ).animate(controller: _animationController).fadeIn(duration: 400.ms).slideX(begin: -0.1, end: 0),
+                  child:
+                      Text(
+                            widget.title,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          )
+                          .animate(controller: _animationController)
+                          .fadeIn(duration: 400.ms)
+                          .slideX(begin: -0.1, end: 0),
                 ),
                 _buildBatchControlButton(
-                  context: context,
-                  icon: Icons.play_arrow_rounded,
-                  label: 'Start All',
-                  onPressed: () async {
-                    await _controller.startAllWaitingTasks();
-                  },
-                  color: Colors.green,
-                ).animate(controller: _animationController).fadeIn(delay: 100.ms, duration: 400.ms),
+                      context: context,
+                      icon: Icons.play_arrow_rounded,
+                      label: 'Start All',
+                      onPressed: () async {
+                        await _controller.startAllWaitingTasks();
+                      },
+                      color: Colors.green,
+                    )
+                    .animate(controller: _animationController)
+                    .fadeIn(delay: 100.ms, duration: 400.ms),
                 const SizedBox(width: 8),
                 _buildBatchControlButton(
-                  context: context,
-                  icon: Icons.pause_rounded,
-                  label: 'Pause All',
-                  onPressed: () async {
-                    await _controller.pauseAllRunningTasks();
-                  },
-                  color: Colors.amber,
-                ).animate(controller: _animationController).fadeIn(delay: 200.ms, duration: 400.ms),
+                      context: context,
+                      icon: Icons.pause_rounded,
+                      label: 'Pause All',
+                      onPressed: () async {
+                        await _controller.pauseAllRunningTasks();
+                      },
+                      color: Colors.amber,
+                    )
+                    .animate(controller: _animationController)
+                    .fadeIn(delay: 200.ms, duration: 400.ms),
                 const SizedBox(width: 8),
                 _buildBatchControlButton(
-                  context: context,
-                  icon: Icons.cancel_rounded,
-                  label: 'Cancel All',
-                  onPressed: () async {
-                    await _showCancelConfirmation(context);
-                  },
-                  color: Colors.red.shade400,
-                ).animate(controller: _animationController).fadeIn(delay: 300.ms, duration: 400.ms),
+                      context: context,
+                      icon: Icons.cancel_rounded,
+                      label: 'Cancel All',
+                      onPressed: () async {
+                        await _showCancelConfirmation(context);
+                      },
+                      color: Colors.red.shade400,
+                    )
+                    .animate(controller: _animationController)
+                    .fadeIn(delay: 300.ms, duration: 400.ms),
               ],
             ),
           ),
@@ -177,57 +197,81 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
             builder: (context, snapshot) {
               if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                 final tasks = snapshot.data!;
-                final uploadCount = tasks.where((task) => task.type == FileTaskType.upload).length;
-                final downloadCount = tasks.where((task) => task.type == FileTaskType.download).length;
-                final completedCount = tasks.where((task) => task.isComplete).length;
-                final activeCount = tasks.where((task) => task.isRunning).length;
+                final uploadCount = tasks
+                    .where((task) => task.type == FileTaskType.upload)
+                    .length;
+                final downloadCount = tasks
+                    .where((task) => task.type == FileTaskType.download)
+                    .length;
+                final completedCount = tasks
+                    .where((task) => task.isComplete)
+                    .length;
+                final activeCount = tasks
+                    .where((task) => task.isRunning)
+                    .length;
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildTaskStatusChip(
-                        label: 'Total: ${tasks.length}',
-                        icon: Icons.folder,
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 8.0,
                       ),
-                      if (uploadCount > 0)
-                        _buildTaskStatusChip(
-                          label: 'Uploads: $uploadCount',
-                          icon: Icons.upload_rounded,
-                          backgroundColor: Colors.blue.withValues(alpha: 0.1),
-                          textColor: Colors.blue,
-                          iconColor: Colors.blue,
-                        ),
-                      if (downloadCount > 0)
-                        _buildTaskStatusChip(
-                          label: 'Downloads: $downloadCount',
-                          icon: Icons.download_rounded,
-                          backgroundColor: Colors.indigo.withValues(alpha: 0.1),
-                          textColor: Colors.indigo,
-                          iconColor: Colors.indigo,
-                        ),
-                      if (completedCount > 0)
-                        _buildTaskStatusChip(
-                          label: 'Completed: $completedCount',
-                          icon: Icons.check_circle_outline,
-                          backgroundColor: Colors.green.withValues(alpha: 0.1),
-                          textColor: Colors.green,
-                          iconColor: Colors.green,
-                        ),
-                      if (activeCount > 0)
-                        _buildTaskStatusChip(
-                          label: 'Active: $activeCount',
-                          icon: Icons.sync,
-                          backgroundColor: Colors.amber.withValues(alpha: 0.1),
-                          textColor: Colors.amber.shade800,
-                          iconColor: Colors.amber.shade800,
-                        ),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: 400.ms, duration: 400.ms).slideY(begin: 0.2, end: 0);
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildTaskStatusChip(
+                            label: 'Total: ${tasks.length}',
+                            icon: Icons.folder,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                          ),
+                          if (uploadCount > 0)
+                            _buildTaskStatusChip(
+                              label: 'Uploads: $uploadCount',
+                              icon: Icons.upload_rounded,
+                              backgroundColor: Colors.blue.withValues(
+                                alpha: 0.1,
+                              ),
+                              textColor: Colors.blue,
+                              iconColor: Colors.blue,
+                            ),
+                          if (downloadCount > 0)
+                            _buildTaskStatusChip(
+                              label: 'Downloads: $downloadCount',
+                              icon: Icons.download_rounded,
+                              backgroundColor: Colors.indigo.withValues(
+                                alpha: 0.1,
+                              ),
+                              textColor: Colors.indigo,
+                              iconColor: Colors.indigo,
+                            ),
+                          if (completedCount > 0)
+                            _buildTaskStatusChip(
+                              label: 'Completed: $completedCount',
+                              icon: Icons.check_circle_outline,
+                              backgroundColor: Colors.green.withValues(
+                                alpha: 0.1,
+                              ),
+                              textColor: Colors.green,
+                              iconColor: Colors.green,
+                            ),
+                          if (activeCount > 0)
+                            _buildTaskStatusChip(
+                              label: 'Active: $activeCount',
+                              icon: Icons.sync,
+                              backgroundColor: Colors.amber.withValues(
+                                alpha: 0.1,
+                              ),
+                              textColor: Colors.amber.shade800,
+                              iconColor: Colors.amber.shade800,
+                            ),
+                        ],
+                      ),
+                    )
+                    .animate()
+                    .fadeIn(delay: 400.ms, duration: 400.ms)
+                    .slideY(begin: 0.2, end: 0);
               }
               return const SizedBox.shrink();
             },
@@ -245,10 +289,20 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const CircularProgressIndicator()
-                            .animate(onPlay: (controller) => controller.repeat())
-                            .shimmer(duration: 1200.ms, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)),
+                            .animate(
+                              onPlay: (controller) => controller.repeat(),
+                            )
+                            .shimmer(
+                              duration: 1200.ms,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.4),
+                            ),
                         const SizedBox(height: 16),
-                        Text('Loading tasks...', style: Theme.of(context).textTheme.bodyMedium).animate().fadeIn(duration: 600.ms),
+                        Text(
+                          'Loading tasks...',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ).animate().fadeIn(duration: 600.ms),
                       ],
                     ),
                   );
@@ -263,18 +317,26 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
                           Icons.error_outline,
                           color: Theme.of(context).colorScheme.error,
                           size: 48,
-                        ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
+                        ).animate().scale(
+                          duration: 400.ms,
+                          curve: Curves.easeOutBack,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'Error loading tasks',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.error),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                         ),
                         const SizedBox(height: 8),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 32.0),
                           child: Text(
                             snapshot.error.toString(),
-                            style: TextStyle(color: Theme.of(context).colorScheme.error),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -283,16 +345,16 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
                   );
                 }
 
-                
                 final tasks = snapshot.data ?? {};
-                final filteredTasks =
-                    tasks
-                        .where(
-                          (task) =>
-                              (widget.showUploadTasks && task.type == FileTaskType.upload) ||
-                              (widget.showDownloadTasks && task.type == FileTaskType.download),
-                        )
-                        .toList();
+                final filteredTasks = tasks
+                    .where(
+                      (task) =>
+                          (widget.showUploadTasks &&
+                              task.type == FileTaskType.upload) ||
+                          (widget.showDownloadTasks &&
+                              task.type == FileTaskType.download),
+                    )
+                    .toList();
 
                 if (filteredTasks.isEmpty) {
                   if (widget.showEmptyMessage) {
@@ -301,14 +363,23 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.file_copy,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
-                          ).animate().fadeIn(duration: 600.ms).scale(duration: 600.ms, curve: Curves.easeOutBack),
+                                Icons.file_copy,
+                                size: 64,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.outline.withValues(alpha: 0.5),
+                              )
+                              .animate()
+                              .fadeIn(duration: 600.ms)
+                              .scale(
+                                duration: 600.ms,
+                                curve: Curves.easeOutBack,
+                              ),
                           const SizedBox(height: 16),
                           Text(
                             'No tasks available',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
                           const SizedBox(height: 8),
                           Container(
@@ -330,7 +401,8 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
                 return Column(
                   children: [
                     // Custom header if provided
-                    if (widget.headerListBuilder != null) widget.headerListBuilder!(context, filteredTasks),
+                    if (widget.headerListBuilder != null)
+                      widget.headerListBuilder!(context, filteredTasks),
 
                     // Task list
                     Expanded(
@@ -350,8 +422,13 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
                             return widget.itemBuilder?.call(context, task) ??
                                 FileTaskItem(
                                   task: task,
-                                  onTaskCompleted: widget.onTaskCompleted != null ? () => widget.onTaskCompleted!(task) : null,
-                                  onTaskRemoved: widget.onTaskRemoved != null ? () => widget.onTaskRemoved!(task) : null,
+                                  onTaskCompleted:
+                                      widget.onTaskCompleted != null
+                                      ? () => widget.onTaskCompleted!(task)
+                                      : null,
+                                  onTaskRemoved: widget.onTaskRemoved != null
+                                      ? () => widget.onTaskRemoved!(task)
+                                      : null,
                                 );
                           },
                         ),
@@ -359,7 +436,8 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
                     ),
 
                     // Custom footer if provided
-                    if (widget.footerListBuilder != null) widget.footerListBuilder!(context, filteredTasks),
+                    if (widget.footerListBuilder != null)
+                      widget.footerListBuilder!(context, filteredTasks),
                   ],
                 );
               },
@@ -382,14 +460,27 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(50),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 16, color: iconColor),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textColor)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: textColor,
+            ),
+          ),
         ],
       ),
     );
@@ -406,24 +497,38 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
           onPressed: onPressed,
           icon: Icon(icon, size: 16),
           label: Text(label),
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: color,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-            elevation: 2,
-            shadowColor: color.withValues(alpha: 0.4),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-          ).copyWith(
-            overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
-              if (states.contains(WidgetState.pressed)) {
-                return Colors.white.withValues(alpha: 0.2);
-              }
-              return null;
-            }),
-          ),
+          style:
+              ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: color,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+                elevation: 2,
+                shadowColor: color.withValues(alpha: 0.4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50),
+                ),
+              ).copyWith(
+                overlayColor: WidgetStateProperty.resolveWith<Color?>((
+                  Set<WidgetState> states,
+                ) {
+                  if (states.contains(WidgetState.pressed)) {
+                    return Colors.white.withValues(alpha: 0.2);
+                  }
+                  return null;
+                }),
+              ),
         )
-        .animate(onPlay: (controller) => controller.repeat(period: const Duration(seconds: 20)))
+        .animate(
+          onPlay: (controller) =>
+              controller.repeat(period: const Duration(seconds: 20)),
+        )
         .shimmer(delay: 5000.ms, duration: 1800.ms, color: Colors.white24);
   }
 
@@ -443,7 +548,9 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
             'Are you sure you want to cancel all active tasks? '
             'This action cannot be undone.',
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           actions: <Widget>[
             TextButton(
               child: const Text('No, Keep Tasks'),
@@ -452,7 +559,10 @@ class _FileTaskListState extends State<FileTaskList> with SingleTickerProviderSt
               },
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Yes, Cancel All'),
               onPressed: () {
                 _controller.cancelAllActiveTasks();

@@ -94,8 +94,9 @@ class FileTaskCard extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap:
-            onItemTap != null ? () => onItemTap!(context, task, index) : null,
+        onTap: onItemTap != null
+            ? () => onItemTap!(context, task, index)
+            : null,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: itemPadding,
@@ -187,10 +188,9 @@ class FileTaskCard extends StatelessWidget {
       fileName,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
         fontWeight: FontWeight.bold,
-        color:
-            task.isComplete
-                ? task.state.color
-                : Theme.of(context).colorScheme.onSurface,
+        color: task.isComplete
+            ? task.state.color
+            : Theme.of(context).colorScheme.onSurface,
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
@@ -307,10 +307,9 @@ class FileTaskCard extends StatelessWidget {
 
   Widget _buildDetailedInfo(BuildContext context, FileTask task, int? index) {
     // Get estimated time based on progress
-    final estimatedTime =
-        task.progressPercentage > 0
-            ? 'Est. ${(100 - task.progressPercentage) ~/ 10} min remaining'
-            : 'Calculating...';
+    final estimatedTime = task.progressPercentage > 0
+        ? 'Est. ${(100 - task.progressPercentage) ~/ 10} min remaining'
+        : 'Calculating...';
 
     return Container(
       margin: const EdgeInsets.only(top: 8),

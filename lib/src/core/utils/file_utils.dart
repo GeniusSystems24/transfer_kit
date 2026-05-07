@@ -50,17 +50,39 @@ class FileUtils {
 
   // Extension sets
   static const _imageExtensions = [
-    'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff', 'tif'
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'svg',
+    'bmp',
+    'ico',
+    'tiff',
+    'tif',
   ];
   static const _videoExtensions = [
-    'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv', 'm4v', '3gp'
+    'mp4',
+    'mov',
+    'avi',
+    'mkv',
+    'webm',
+    'flv',
+    'wmv',
+    'm4v',
+    '3gp',
   ];
   static const _audioExtensions = [
-    'mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma', 'opus'
+    'mp3',
+    'wav',
+    'ogg',
+    'flac',
+    'm4a',
+    'aac',
+    'wma',
+    'opus',
   ];
-  static const _documentExtensions = [
-    'doc', 'docx', 'odt', 'rtf', 'txt', 'md'
-  ];
+  static const _documentExtensions = ['doc', 'docx', 'odt', 'rtf', 'txt', 'md'];
   static const _spreadsheetExtensions = ['xls', 'xlsx', 'csv', 'ods'];
   static const _archiveExtensions = ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'];
 

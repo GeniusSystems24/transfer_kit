@@ -20,12 +20,19 @@ class FileUploadProgressIndicator extends StatelessWidget {
   final FileTask task;
   final bool showFileSize;
 
-  const FileUploadProgressIndicator({super.key, required this.task, this.showFileSize = true});
+  const FileUploadProgressIndicator({
+    super.key,
+    required this.task,
+    this.showFileSize = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.black.withValues(alpha: .5), borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: .5),
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
@@ -37,10 +44,15 @@ class FileUploadProgressIndicator extends StatelessWidget {
               width: 25,
               height: 25,
               child: Center(
-                child: CircularProgressIndicator(
-                  value: task.progressPercentage / 100,
-                  backgroundColor: Theme.of(context).colorScheme.outline.withValues(alpha: .5),
-                ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: const Duration(seconds: 1)),
+                child:
+                    CircularProgressIndicator(
+                          value: task.progressPercentage / 100,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: .5),
+                        )
+                        .animate(onPlay: (controller) => controller.repeat())
+                        .shimmer(duration: const Duration(seconds: 1)),
               ),
             ),
             if (showFileSize)

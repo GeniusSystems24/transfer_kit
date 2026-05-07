@@ -181,14 +181,13 @@ class TransferKit {
     required String taskId,
     required FileGroupInfo group,
     bool autoStart = true,
-  }) =>
-      repository.createUploadTask(
-        taskId: taskId,
-        filePath: filePathAndUrl.path,
-        destinationPath: filePathAndUrl.destinationPath ?? '',
-        group: group,
-        autoStart: autoStart,
-      );
+  }) => repository.createUploadTask(
+    taskId: taskId,
+    filePath: filePathAndUrl.path,
+    destinationPath: filePathAndUrl.destinationPath ?? '',
+    group: group,
+    autoStart: autoStart,
+  );
 
   /// Streams a file upload with progress updates
   Stream<FileTask> uploadTaskStream({
@@ -213,7 +212,9 @@ class TransferKit {
       group: group,
     ).catchError((error) {
       if (!controller.isClosed) {
-        controller.addError(FileUploadException('Failed to stream upload: $error'));
+        controller.addError(
+          FileUploadException('Failed to stream upload: $error'),
+        );
         controller.close();
       }
     });
@@ -299,13 +300,12 @@ class TransferKit {
     required String taskId,
     required FileGroupInfo group,
     bool autoStart = true,
-  }) =>
-      repository.createDownloadTask(
-        taskId: taskId,
-        url: filePathAndUrl.url!,
-        group: group,
-        autoStart: autoStart,
-      );
+  }) => repository.createDownloadTask(
+    taskId: taskId,
+    url: filePathAndUrl.url!,
+    group: group,
+    autoStart: autoStart,
+  );
 
   /// Streams a file from cache or downloads it, with progress updates
   Stream<FileTask> downloadTaskStream({

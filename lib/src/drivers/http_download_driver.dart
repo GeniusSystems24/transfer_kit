@@ -20,10 +20,14 @@ import '../core/driver/transfer_driver.dart';
 /// **Supported capabilities**: download, cancel, progress.
 /// Upload, pause, and resume are not supported.
 class HttpDownloadDriver implements TransferDriver {
-  HttpDownloadDriver({Map<String, String> headers = const {}})
-      : _headers = Map.unmodifiable(headers);
+  HttpDownloadDriver({
+    Map<String, String> headers = const {},
+    http.Client Function()? clientFactory,
+  }) : _headers = Map.unmodifiable(headers),
+       _clientFactory = clientFactory ?? (() => http.Client());
 
   final Map<String, String> _headers;
+  final http.Client Function() _clientFactory;
   final Map<String, http.Client> _activeClients = {};
 
   static const TransferCapabilities _capabilities = TransferCapabilities(
@@ -38,17 +42,16 @@ class HttpDownloadDriver implements TransferDriver {
   @override
   Stream<TransferProgressEvent> download(DownloadRequest request) async* {
     if (!capabilities.supportsDownload) {
-      throw UnsupportedCapabilityException(
+      throw const UnsupportedCapabilityException(
         'HttpDownloadDriver does not support download.',
         capability: 'supportsDownload',
       );
     }
 
-    final client = http.Client();
+    final client = _clientFactory();
     _activeClients[request.taskId] = client;
 
-    final localPath =
-        request.localPath ?? _tempPathFor(request.taskId);
+    final localPath = request.localPath ?? _tempPathFor(request.taskId);
     final tempPath = '$localPath.tmp';
 
     try {
@@ -97,20 +100,13 @@ class HttpDownloadDriver implements TransferDriver {
       // Rename temp file to final path
       await File(tempPath).rename(localPath);
 
-      yield TransferCompleted(
-        taskId: request.taskId,
-        localPath: localPath,
-      );
+      yield TransferCompleted(taskId: request.taskId, localPath: localPath);
     } catch (e, st) {
       // Clean up temp file on error
       final tmp = File(tempPath);
       if (await tmp.exists()) await tmp.delete();
 
-      yield TransferFailed(
-        taskId: request.taskId,
-        error: e,
-        stackTrace: st,
-      );
+      yield TransferFailed(taskId: request.taskId, error: e, stackTrace: st);
     } finally {
       _activeClients.remove(request.taskId);
     }
@@ -118,7 +114,7 @@ class HttpDownloadDriver implements TransferDriver {
 
   @override
   Stream<TransferProgressEvent> upload(UploadRequest request) {
-    throw UnsupportedCapabilityException(
+    throw const UnsupportedCapabilityException(
       'HttpDownloadDriver does not support upload.',
       capability: 'supportsUpload',
     );
@@ -126,7 +122,7 @@ class HttpDownloadDriver implements TransferDriver {
 
   @override
   Future<void> pause(String taskId) async {
-    throw UnsupportedCapabilityException(
+    throw const UnsupportedCapabilityException(
       'HttpDownloadDriver does not support pause.',
       capability: 'supportsPause',
     );
@@ -134,7 +130,7 @@ class HttpDownloadDriver implements TransferDriver {
 
   @override
   Future<void> resume(String taskId) async {
-    throw UnsupportedCapabilityException(
+    throw const UnsupportedCapabilityException(
       'HttpDownloadDriver does not support resume.',
       capability: 'supportsResume',
     );

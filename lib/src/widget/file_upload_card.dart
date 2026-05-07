@@ -221,11 +221,10 @@ class _FileUploadCardState extends State<FileUploadCard>
           ),
         ),
         constraints: widget.constraints,
-        child:
-            widget.useTaskControl
-                ? _buildTaskControlledUpload(context)
-                : (widget.useStream
-                    ? _StreamUploadContent(
+        child: widget.useTaskControl
+            ? _buildTaskControlledUpload(context)
+            : (widget.useStream
+                  ? _StreamUploadContent(
                       filePath: widget.filePath,
                       destinationPath: widget.destinationPath,
                       storagePath: widget.storagePath,
@@ -234,7 +233,7 @@ class _FileUploadCardState extends State<FileUploadCard>
                       uploadingWidget: widget.uploadingWidget,
                       controller: _controller,
                     )
-                    : _FutureUploadContent(
+                  : _FutureUploadContent(
                       filePath: widget.filePath,
                       destinationPath: widget.destinationPath,
                       storagePath: widget.storagePath,
@@ -333,12 +332,11 @@ class _FileUploadCardState extends State<FileUploadCard>
                     const SizedBox(height: 16),
                     Text(
                           'Preparing to upload...',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.2,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.2,
+                              ),
                         )
                         .animate()
                         .fadeIn(duration: 600.ms)
@@ -427,14 +425,13 @@ class _FileUploadCardState extends State<FileUploadCard>
                                   child: Text(
                                     widget.storagePath ??
                                         widget.destinationPath,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant
-                                          .withValues(alpha: 0.7),
-                                    ),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant
+                                              .withValues(alpha: 0.7),
+                                        ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -479,10 +476,9 @@ class _FileUploadCardState extends State<FileUploadCard>
                                 '${FileUtils.formatSize(task.bytesTransferred)} / ${FileUtils.formatSize(task.totalBytes)}',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -497,10 +493,9 @@ class _FileUploadCardState extends State<FileUploadCard>
                               Container(
                                 height: 10,
                                 decoration: BoxDecoration(
-                                  color:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainerHighest,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(5),
                                 ),
                               ),
@@ -549,8 +544,8 @@ class _FileUploadCardState extends State<FileUploadCard>
                                       ),
                                     )
                                     .animate(
-                                      onPlay:
-                                          (controller) => controller.repeat(),
+                                      onPlay: (controller) =>
+                                          controller.repeat(),
                                     )
                                     .shimmer(duration: 1500.ms, angle: 0),
                             ],
@@ -696,11 +691,10 @@ class _FileUploadCardState extends State<FileUploadCard>
                               size: 18,
                             )
                             .animate(
-                              onPlay:
-                                  (controller) => controller.repeat(
-                                    reverse: true,
-                                    period: const Duration(seconds: 4),
-                                  ),
+                              onPlay: (controller) => controller.repeat(
+                                reverse: true,
+                                period: const Duration(seconds: 4),
+                              ),
                             )
                             .fadeIn(duration: 300.ms)
                             .then()
@@ -809,41 +803,47 @@ class _FileUploadCardState extends State<FileUploadCard>
     return AnimatedScale(
       scale: 1.0,
       duration: const Duration(milliseconds: 150),
-      child: ElevatedButton.icon(
-            onPressed: onPressed,
-            icon: Icon(icon, size: 16),
-            label: Text(label),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isOutlined ? Colors.transparent : color,
-              foregroundColor: isOutlined ? color : Colors.white,
-              elevation: isOutlined ? 0 : 2,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              textStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: isOutlined ? BorderSide(color: color) : BorderSide.none,
-              ),
-            ),
-          )
-          .animate(
-            onPlay:
-                (controller) => controller.repeat(
+      child:
+          ElevatedButton.icon(
+                onPressed: onPressed,
+                icon: Icon(icon, size: 16),
+                label: Text(label),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isOutlined ? Colors.transparent : color,
+                  foregroundColor: isOutlined ? color : Colors.white,
+                  elevation: isOutlined ? 0 : 2,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: isOutlined
+                        ? BorderSide(color: color)
+                        : BorderSide.none,
+                  ),
+                ),
+              )
+              .animate(
+                onPlay: (controller) => controller.repeat(
                   reverse: true,
                   period: const Duration(seconds: 10),
                 ),
-          )
-          .shimmer(
-            delay: 3000.ms,
-            duration: 1800.ms,
-            color: isOutlined ? color.withValues(alpha: 0.3) : Colors.white24,
-          ),
+              )
+              .shimmer(
+                delay: 3000.ms,
+                duration: 1800.ms,
+                color: isOutlined
+                    ? color.withValues(alpha: 0.3)
+                    : Colors.white24,
+              ),
     );
   }
 }
-
 
 /// Widget that handles file upload using Future (uploadFile)
 class _FutureUploadContent extends StatelessWidget {

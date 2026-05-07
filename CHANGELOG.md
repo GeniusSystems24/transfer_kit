@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-05-07
+
+### Breaking Changes
+
+- **Firebase removed**: `transfer_kit` no longer depends on `firebase_storage` or
+  `cloud_firestore`. Remove these from your `pubspec.yaml` if added solely for TransferKit.
+- **Driver injection required**: `TransferKitConfig.init()` now requires a `driver`
+  parameter. There is no default Firebase driver. See [MIGRATION.md](MIGRATION.md).
+- **FileTask**: Removed `task`, `firebaseTask()`, `reference`, and the
+  `.upload(UploadTask?)` constructor.
+- **Extensions**: Removed `toTimestamp()`, `objectToTimestamp()`,
+  `getDocumentReference()`, `getTimestamp()`, `mapCanConvertToFirebase()`,
+  and `GeoPointExtension`.
+
+### Added
+
+- `TransferDriver` abstract interface — implement to use any storage backend.
+- `TransferCapabilities` — immutable capability declaration for drivers.
+- `DownloadRequest` / `UploadRequest` — generic, credential-free transfer request types.
+- `TransferProgressEvent` sealed class hierarchy (`TransferProgressUpdate`,
+  `TransferCompleted`, `TransferFailed`).
+- `UnsupportedCapabilityException` — thrown synchronously when a driver capability
+  is not supported.
+- `HttpDownloadDriver` — built-in HTTP/HTTPS download driver with cancellation support.
+- `LocalFileCopyDriver` — built-in on-device file copy driver; also serves as
+  the canonical reference implementation for custom driver authors.
+
+### Migration
+
+See [MIGRATION.md](MIGRATION.md) for the complete guide, including a drop-in
+`FirebaseStorageDriver` adapter example for existing Firebase users.
+
+---
+
 ## [2.2.0] - 2026-05-07
 
 ### Added

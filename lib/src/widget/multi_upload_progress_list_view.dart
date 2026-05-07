@@ -48,31 +48,31 @@ class MultiUploadProgressListView extends StatefulWidget {
 
   /// Custom builder for file item title
   final Widget Function(BuildContext context, FileTask task, int index)?
-      titleBuilder;
+  titleBuilder;
 
   /// Custom builder for file item subtitle
   final Widget Function(BuildContext context, FileTask task, int index)?
-      subtitleBuilder;
+  subtitleBuilder;
 
   /// Custom builder for file item trailing widget
   final Widget Function(BuildContext context, FileTask task, int index)?
-      trailingBuilder;
+  trailingBuilder;
 
   /// Custom builder for file item leading widget
   final Widget Function(BuildContext context, FileTask task, int index)?
-      leadingBuilder;
+  leadingBuilder;
 
   /// Custom progress indicator builder
   final Widget Function(BuildContext context, FileTask task, int index)?
-      progressBuilder;
+  progressBuilder;
 
   /// Custom builder for the header widget displayed above the list
   final Widget Function(BuildContext context, MultiUploadFileTask progress)?
-      headerBuilder;
+  headerBuilder;
 
   /// Custom builder for the footer widget displayed below the list
   final Widget Function(BuildContext context, MultiUploadFileTask progress)?
-      footerBuilder;
+  footerBuilder;
 
   /// Custom item padding
   final EdgeInsetsGeometry itemPadding;
@@ -113,10 +113,12 @@ class MultiUploadProgressListView extends StatefulWidget {
   });
 
   @override
-  State<MultiUploadProgressListView> createState() => _MultiUploadProgressListViewState();
+  State<MultiUploadProgressListView> createState() =>
+      _MultiUploadProgressListViewState();
 }
 
-class _MultiUploadProgressListViewState extends State<MultiUploadProgressListView> {
+class _MultiUploadProgressListViewState
+    extends State<MultiUploadProgressListView> {
   final Set<int> _reportedFileIndices = {};
   bool _allFilesReported = false;
 
@@ -125,7 +127,9 @@ class _MultiUploadProgressListViewState extends State<MultiUploadProgressListVie
     if (widget.onFileUploaded != null) {
       for (int i = 0; i < widget.progress.tasks.length; i++) {
         final task = widget.progress.tasks[i];
-        if (task.isComplete && task.downloadUrl != null && !_reportedFileIndices.contains(i)) {
+        if (task.isComplete &&
+            task.downloadUrl != null &&
+            !_reportedFileIndices.contains(i)) {
           _reportedFileIndices.add(i);
           WidgetsBinding.instance.addPostFrameCallback((_) {
             widget.onFileUploaded!(task, i);
@@ -135,7 +139,9 @@ class _MultiUploadProgressListViewState extends State<MultiUploadProgressListVie
     }
 
     // Check if all files are completed to trigger onAllFilesUploaded callback (only once)
-    if (widget.onAllFilesUploaded != null && widget.progress.isComplete && !_allFilesReported) {
+    if (widget.onAllFilesUploaded != null &&
+        widget.progress.isComplete &&
+        !_allFilesReported) {
       _allFilesReported = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final completedTasks = widget.progress.tasks
@@ -175,32 +181,44 @@ class _MultiUploadProgressListViewState extends State<MultiUploadProgressListVie
                       itemPadding: widget.itemPadding,
                       leadingBuilder: widget.leadingBuilder == null
                           ? null
-                          : (context, task, _) =>
-                              widget.leadingBuilder!.call(context, task, index),
+                          : (context, task, _) => widget.leadingBuilder!.call(
+                              context,
+                              task,
+                              index,
+                            ),
                       titleBuilder: widget.titleBuilder == null
                           ? null
                           : (context, task, _) =>
-                              widget.titleBuilder!.call(context, task, index),
+                                widget.titleBuilder!.call(context, task, index),
                       subtitleBuilder: widget.subtitleBuilder == null
                           ? null
-                          : (context, task, _) =>
-                              widget.subtitleBuilder!.call(context, task, index),
+                          : (context, task, _) => widget.subtitleBuilder!.call(
+                              context,
+                              task,
+                              index,
+                            ),
                       trailingBuilder: widget.trailingBuilder == null
                           ? null
-                          : (context, task, _) =>
-                              widget.trailingBuilder!.call(context, task, index),
+                          : (context, task, _) => widget.trailingBuilder!.call(
+                              context,
+                              task,
+                              index,
+                            ),
                       progressBuilder: widget.progressBuilder == null
                           ? null
-                          : (context, task, _) =>
-                              widget.progressBuilder!.call(context, task, index),
+                          : (context, task, _) => widget.progressBuilder!.call(
+                              context,
+                              task,
+                              index,
+                            ),
                       animationDuration: widget.animationDuration,
                       showDetailedInfo: widget.showDetailedInfo,
                       useCompactLayout: widget.useCompactLayout,
                       showFileSize: widget.showFileSize,
                     ).animate().fadeIn(
-                          duration: const Duration(milliseconds: 300),
-                          delay: Duration(milliseconds: 50 * index),
-                        );
+                      duration: const Duration(milliseconds: 300),
+                      delay: Duration(milliseconds: 50 * index),
+                    );
                   },
                 ),
         ),
@@ -299,9 +317,8 @@ class _MultiUploadProgressListViewState extends State<MultiUploadProgressListVie
                         ),
                         child: Text(
                           '${widget.progress.overallProgressPercentage.toStringAsFixed(1)}%',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -320,18 +337,20 @@ class _MultiUploadProgressListViewState extends State<MultiUploadProgressListVie
         ],
       ),
     ).animate().slideY(
-          begin: -0.2,
-          end: 0,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutQuad,
-        );
+      begin: -0.2,
+      end: 0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutQuad,
+    );
   }
 
   Widget _buildDefaultFooter(BuildContext context) {
-    final completedFiles =
-        widget.progress.tasks.where((task) => task.isComplete).length;
-    final completionPercent =
-        widget.progress.tasks.isEmpty ? 0.0 : completedFiles / widget.progress.tasks.length;
+    final completedFiles = widget.progress.tasks
+        .where((task) => task.isComplete)
+        .length;
+    final completionPercent = widget.progress.tasks.isEmpty
+        ? 0.0
+        : completedFiles / widget.progress.tasks.length;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -372,11 +391,9 @@ class _MultiUploadProgressListViewState extends State<MultiUploadProgressListVie
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 3,
-                            value: widget.progress.overallProgressPercentage / 100,
-                            color: _getStatusColor(
-                              context,
-                              completionPercent,
-                            ),
+                            value:
+                                widget.progress.overallProgressPercentage / 100,
+                            color: _getStatusColor(context, completionPercent),
                           ),
                         ),
                 ),
@@ -391,10 +408,11 @@ class _MultiUploadProgressListViewState extends State<MultiUploadProgressListVie
                             ? 'All uploads completed'
                             : 'Completed: $completedFiles/${widget.progress.tasks.length}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      if (!widget.progress.isComplete && widget.progress.tasks.isNotEmpty)
+                      if (!widget.progress.isComplete &&
+                          widget.progress.tasks.isNotEmpty)
                         Text(
                           _getEstimatedTimeRemaining(context),
                           style: Theme.of(context).textTheme.bodySmall,
@@ -407,34 +425,30 @@ class _MultiUploadProgressListViewState extends State<MultiUploadProgressListVie
           ),
           if (widget.progress.isComplete)
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: 16,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
                   ),
-                  SizedBox(width: 4),
-                  Text(
-                    'Complete',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ],
-              ),
-            )
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        'Complete',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
                 .animate()
                 .fadeIn(duration: const Duration(milliseconds: 300))
                 .scale(
@@ -444,11 +458,11 @@ class _MultiUploadProgressListViewState extends State<MultiUploadProgressListVie
         ],
       ),
     ).animate().slideY(
-          begin: 0.2,
-          end: 0,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutQuad,
-        );
+      begin: 0.2,
+      end: 0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutQuad,
+    );
   }
 
   String _getEstimatedTimeRemaining(BuildContext context) {

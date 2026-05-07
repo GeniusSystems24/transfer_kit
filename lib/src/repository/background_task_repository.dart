@@ -93,13 +93,12 @@ class BackgroundTaskRepository
 
     // Since the data type is String, we need more context
     // to determine what's "old". This is a general example:
-    final oldItems =
-        value.where((item) {
-          // This logic can be customized based on data format
-          // Example: if the item contains a timestamp
-          return item.contains('old') ||
-              item.contains(cutoffDate.toString().substring(0, 10));
-        }).toSet();
+    final oldItems = value.where((item) {
+      // This logic can be customized based on data format
+      // Example: if the item contains a timestamp
+      return item.contains('old') ||
+          item.contains(cutoffDate.toString().substring(0, 10));
+    }).toSet();
 
     for (final item in oldItems) {
       if (value.remove(item)) {

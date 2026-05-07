@@ -14,13 +14,13 @@ class FakeTransferDriver implements TransferDriver {
     this.progressSteps = 3,
     this.delay = Duration.zero,
   }) : _capabilities = TransferCapabilities(
-          supportsDownload: true,
-          supportsUpload: true,
-          supportsPause: supportsPause,
-          supportsResume: supportsPause,
-          supportsCancel: true,
-          supportsProgress: true,
-        );
+         supportsDownload: true,
+         supportsUpload: true,
+         supportsPause: supportsPause,
+         supportsResume: supportsPause,
+         supportsCancel: true,
+         supportsProgress: true,
+       );
 
   final bool shouldFail;
   final int progressSteps;
@@ -37,7 +37,11 @@ class FakeTransferDriver implements TransferDriver {
   @override
   Stream<TransferProgressEvent> download(DownloadRequest request) async* {
     downloadCallCount++;
-    yield* _runTransfer(request.taskId, isUpload: false, localPath: request.localPath ?? '/fake/${request.taskId}');
+    yield* _runTransfer(
+      request.taskId,
+      isUpload: false,
+      localPath: request.localPath ?? '/fake/${request.taskId}',
+    );
   }
 
   @override
@@ -80,7 +84,7 @@ class FakeTransferDriver implements TransferDriver {
   @override
   Future<void> pause(String taskId) async {
     if (!capabilities.supportsPause) {
-      throw UnsupportedCapabilityException(
+      throw const UnsupportedCapabilityException(
         'This driver does not support pause.',
         capability: 'supportsPause',
       );
@@ -90,7 +94,7 @@ class FakeTransferDriver implements TransferDriver {
   @override
   Future<void> resume(String taskId) async {
     if (!capabilities.supportsResume) {
-      throw UnsupportedCapabilityException(
+      throw const UnsupportedCapabilityException(
         'This driver does not support resume.',
         capability: 'supportsResume',
       );

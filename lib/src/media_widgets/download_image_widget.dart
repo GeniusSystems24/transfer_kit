@@ -154,11 +154,12 @@ class DownloadImageWidget extends StatelessWidget {
         return StreamBuilder(
           initialData:
               FileTaskController.instance.fileUpdates[downloadTask.url],
-          stream: (streamController ??
-                  FileTaskController.instance.createFileController(
-                    downloadTask.url,
-                  ))
-              .stream,
+          stream:
+              (streamController ??
+                      FileTaskController.instance.createFileController(
+                        downloadTask.url,
+                      ))
+                  .stream,
           builder: (context, asyncSnapshot) {
             var taskItem = asyncSnapshot.data;
             return MediaDownloadCard(
@@ -206,7 +207,8 @@ class DownloadImageWidget extends StatelessWidget {
             color: color,
             opacity: opacity,
             colorBlendMode: colorBlendMode,
-            errorBuilder: errorBuilder ??
+            errorBuilder:
+                errorBuilder ??
                 (context, error, stackTrace) => const _ImageErrorWidget(),
             frameBuilder: frameBuilder,
             semanticLabel: semanticLabel,
@@ -300,10 +302,7 @@ class ImageViewerFullScreen extends StatelessWidget {
     Widget image = InteractiveViewer(
       minScale: 0.5,
       maxScale: 4.0,
-      child: Image.file(
-        File(filePath),
-        fit: BoxFit.contain,
-      ),
+      child: Image.file(File(filePath), fit: BoxFit.contain),
     );
 
     if (heroTag != null) {

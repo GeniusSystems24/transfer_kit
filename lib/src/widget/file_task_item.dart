@@ -59,14 +59,14 @@ class FileTaskItem extends StatefulWidget {
 
   /// Custom builder for task status badge
   final Widget Function(BuildContext context, FileTask task)?
-      statusBadgeBuilder;
+  statusBadgeBuilder;
 
   /// Custom builder for progress indicator
   final Widget Function(BuildContext context, FileTask task)? progressBuilder;
 
   /// Custom builder for action buttons
   final List<Widget> Function(BuildContext context, FileTask task)?
-      actionsBuilder;
+  actionsBuilder;
 
   /// Control margin of the card
   final EdgeInsetsGeometry? margin;
@@ -168,9 +168,11 @@ class _FileTaskItemState extends State<FileTaskItem>
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      margin: widget.margin ??
+      margin:
+          widget.margin ??
           const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
-      decoration: widget.decoration ??
+      decoration:
+          widget.decoration ??
           BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -219,56 +221,55 @@ class _FileTaskItemState extends State<FileTaskItem>
                       widget.iconBuilder != null
                           ? widget.iconBuilder!(context, widget.task)
                           : _buildFileIcon()
-                              .animate()
-                              .scale(
-                                duration: 400.ms,
-                                curve: Curves.easeOutBack,
-                              )
-                              .fadeIn(duration: 300.ms),
+                                .animate()
+                                .scale(
+                                  duration: 400.ms,
+                                  curve: Curves.easeOutBack,
+                                )
+                                .fadeIn(duration: 300.ms),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _getFileName(),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                              overflow: TextOverflow.ellipsis,
-                            )
+                                  _getFileName(),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                  overflow: TextOverflow.ellipsis,
+                                )
                                 .animate()
                                 .fadeIn(duration: 300.ms)
                                 .slideX(begin: -0.1, end: 0),
                             const SizedBox(height: 6),
                             Row(
-                              children: [
-                                Icon(
-                                  widget.task.type == FileTaskType.upload
-                                      ? Icons.upload_rounded
-                                      : Icons.download_rounded,
-                                  size: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .secondary
-                                      .withValues(alpha: 0.7),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  '${widget.task.type.name} • ${_formatDateTime(widget.task.createdAt)}',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodySmall?.copyWith(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.color
-                                            ?.withValues(alpha: 0.7),
-                                      ),
-                                ),
-                              ],
-                            )
+                                  children: [
+                                    Icon(
+                                      widget.task.type == FileTaskType.upload
+                                          ? Icons.upload_rounded
+                                          : Icons.download_rounded,
+                                      size: 14,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondary
+                                          .withValues(alpha: 0.7),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '${widget.task.type.name} • ${_formatDateTime(widget.task.createdAt)}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.color
+                                                ?.withValues(alpha: 0.7),
+                                          ),
+                                    ),
+                                  ],
+                                )
                                 .animate()
                                 .fadeIn(delay: 100.ms, duration: 300.ms)
                                 .slideX(begin: -0.1, end: 0),
@@ -297,11 +298,12 @@ class _FileTaskItemState extends State<FileTaskItem>
                                       Container(
                                         height: 10,
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceContainerHighest,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainerHighest,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                       ),
                                       // Animated progress bar with gradient
@@ -329,36 +331,39 @@ class _FileTaskItemState extends State<FileTaskItem>
                                       // Pulse effect for running tasks
                                       if (widget.task.isRunning)
                                         FractionallySizedBox(
-                                          widthFactor: _progressAnimation.value,
-                                          child: Container(
-                                            height: 10,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: [
-                                                  Colors.white.withValues(
-                                                    alpha: 0,
+                                              widthFactor:
+                                                  _progressAnimation.value,
+                                              child: Container(
+                                                height: 10,
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [
+                                                      Colors.white.withValues(
+                                                        alpha: 0,
+                                                      ),
+                                                      Colors.white.withValues(
+                                                        alpha: 0.3,
+                                                      ),
+                                                      Colors.white.withValues(
+                                                        alpha: 0,
+                                                      ),
+                                                    ],
+                                                    begin: Alignment.centerLeft,
+                                                    end: Alignment.centerRight,
                                                   ),
-                                                  Colors.white.withValues(
-                                                    alpha: 0.3,
-                                                  ),
-                                                  Colors.white.withValues(
-                                                    alpha: 0,
-                                                  ),
-                                                ],
-                                                begin: Alignment.centerLeft,
-                                                end: Alignment.centerRight,
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
                                               ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                        )
+                                            )
                                             .animate(
                                               onPlay: (controller) =>
                                                   controller.repeat(),
                                             )
                                             .shimmer(
-                                                duration: 1500.ms, angle: 0),
+                                              duration: 1500.ms,
+                                              angle: 0,
+                                            ),
                                     ],
                                   ),
                                 ),
@@ -378,19 +383,23 @@ class _FileTaskItemState extends State<FileTaskItem>
                                         children: [
                                           if (widget.showProgressPercentage)
                                             Text(
-                                              '${widget.task.progressPercentage.toStringAsFixed(1)}%',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .titleSmall
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.bold,
-                                                    color: _getProgressColor(
-                                                      context,
-                                                    ),
-                                                  ),
-                                            )
+                                                  '${widget.task.progressPercentage.toStringAsFixed(1)}%',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleSmall
+                                                      ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color:
+                                                            _getProgressColor(
+                                                              context,
+                                                            ),
+                                                      ),
+                                                )
                                                 .animate(
-                                                  autoPlay: widget.task
+                                                  autoPlay:
+                                                      widget
+                                                          .task
                                                           .progressPercentage >
                                                       0,
                                                 )
@@ -450,16 +459,14 @@ class _FileTaskItemState extends State<FileTaskItem>
                                               Icon(
                                                 Icons.storage_rounded,
                                                 size: 14,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
                                               ),
                                               const SizedBox(width: 4),
                                               RichText(
                                                 text: TextSpan(
-                                                  style: Theme.of(
-                                                    context,
-                                                  )
+                                                  style: Theme.of(context)
                                                       .textTheme
                                                       .bodySmall
                                                       ?.copyWith(
@@ -477,7 +484,9 @@ class _FileTaskItemState extends State<FileTaskItem>
                                                         fontWeight:
                                                             FontWeight.bold,
                                                         color: widget
-                                                            .task.state.color,
+                                                            .task
+                                                            .state
+                                                            .color,
                                                       ),
                                                     ),
                                                     const TextSpan(text: '/'),
@@ -493,9 +502,9 @@ class _FileTaskItemState extends State<FileTaskItem>
                                             ],
                                           ),
                                         ).animate().fadeIn(
-                                              delay: 200.ms,
-                                              duration: 400.ms,
-                                            ),
+                                          delay: 200.ms,
+                                          duration: 400.ms,
+                                        ),
                                     ],
                                   ),
                                 ],
@@ -509,25 +518,22 @@ class _FileTaskItemState extends State<FileTaskItem>
                     const SizedBox(height: 20),
                     // Control buttons - use custom actions builder or default
                     Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          alignment: WrapAlignment.end,
-                          children: widget.actionsBuilder != null
-                              ? widget.actionsBuilder!(
-                                  context,
-                                  widget.task,
-                                )
-                              : _buildDefaultActions(
-                                  context,
-                                  _fileController,
-                                ),
-                        ),
-                      ),
-                    )
+                          margin: const EdgeInsets.only(top: 4),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              alignment: WrapAlignment.end,
+                              children: widget.actionsBuilder != null
+                                  ? widget.actionsBuilder!(context, widget.task)
+                                  : _buildDefaultActions(
+                                      context,
+                                      _fileController,
+                                    ),
+                            ),
+                          ),
+                        )
                         .animate()
                         .fadeIn(delay: 200.ms, duration: 400.ms)
                         .slideY(begin: 0.2, end: 0),
@@ -536,61 +542,65 @@ class _FileTaskItemState extends State<FileTaskItem>
                   // Error message
                   if (widget.task.isError && widget.task.errorMessage != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 12.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Theme.of(
-                                context,
-                              ).colorScheme.error.withValues(alpha: 0.15),
-                              Theme.of(
-                                context,
-                              ).colorScheme.error.withValues(alpha: 0.05),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.error.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              color: Theme.of(context).colorScheme.error,
-                              size: 18,
-                            )
-                                .animate(
-                                  onPlay: (controller) => controller.repeat(
-                                    reverse: true,
-                                    period: const Duration(seconds: 4),
-                                  ),
-                                )
-                                .fadeIn(duration: 300.ms)
-                                .then()
-                                .fadeOut(delay: 2000.ms, duration: 700.ms),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                widget.task.errorMessage!,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error,
-                                  fontSize: 13,
-                                ),
+                          padding: const EdgeInsets.only(top: 12.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.error.withValues(alpha: 0.15),
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.error.withValues(alpha: 0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.error.withValues(alpha: 0.3),
+                                width: 1,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    )
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                      Icons.error_outline,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                      size: 18,
+                                    )
+                                    .animate(
+                                      onPlay: (controller) => controller.repeat(
+                                        reverse: true,
+                                        period: const Duration(seconds: 4),
+                                      ),
+                                    )
+                                    .fadeIn(duration: 300.ms)
+                                    .then()
+                                    .fadeOut(delay: 2000.ms, duration: 700.ms),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    widget.task.errorMessage!,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
                         .animate()
                         .fadeIn(duration: 300.ms)
                         .slideY(begin: 0.2, end: 0),
@@ -600,10 +610,7 @@ class _FileTaskItemState extends State<FileTaskItem>
           ),
         ),
       ),
-    )
-        .animate()
-        .fadeIn(duration: 400.ms)
-        .scale(begin: const Offset(0.98, 0.98), duration: 400.ms);
+    ).animate().fadeIn(duration: 400.ms).scale(begin: const Offset(0.98, 0.98), duration: 400.ms);
   }
 
   bool _shouldShowActionButtons() {
@@ -894,31 +901,35 @@ class _FileTaskItemState extends State<FileTaskItem>
       duration: const Duration(milliseconds: 150),
       child: ElevatedButton(
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          foregroundColor: isPrimary ? Colors.white : color,
-          backgroundColor: isPrimary ? color : color.withValues(alpha: 0.1),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(50),
-            side: isPrimary
-                ? BorderSide.none
-                : BorderSide(color: color.withValues(alpha: 0.5), width: 1),
-          ),
-          elevation: isPrimary ? 2 : 0,
-          shadowColor: color.withValues(alpha: 0.4),
-        ).copyWith(
-          overlayColor: WidgetStateProperty.resolveWith<Color?>((
-            Set<WidgetState> states,
-          ) {
-            if (states.contains(WidgetState.pressed)) {
-              return isPrimary
-                  ? Colors.white.withValues(alpha: 0.2)
-                  : color.withValues(alpha: 0.2);
-            }
-            return null;
-          }),
-        ),
+        style:
+            ElevatedButton.styleFrom(
+              foregroundColor: isPrimary ? Colors.white : color,
+              backgroundColor: isPrimary ? color : color.withValues(alpha: 0.1),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              textStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(50),
+                side: isPrimary
+                    ? BorderSide.none
+                    : BorderSide(color: color.withValues(alpha: 0.5), width: 1),
+              ),
+              elevation: isPrimary ? 2 : 0,
+              shadowColor: color.withValues(alpha: 0.4),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith<Color?>((
+                Set<WidgetState> states,
+              ) {
+                if (states.contains(WidgetState.pressed)) {
+                  return isPrimary
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : color.withValues(alpha: 0.2);
+                }
+                return null;
+              }),
+            ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -929,8 +940,9 @@ class _FileTaskItemState extends State<FileTaskItem>
                 .shimmer(
                   delay: 300.ms,
                   duration: 1800.ms,
-                  color:
-                      isPrimary ? Colors.white24 : color.withValues(alpha: 0.3),
+                  color: isPrimary
+                      ? Colors.white24
+                      : color.withValues(alpha: 0.3),
                 ),
             const SizedBox(width: 6),
             Text(label),

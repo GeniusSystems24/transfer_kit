@@ -50,8 +50,9 @@ class MultiUploadProgressIndicator extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: .6),
-          borderRadius: BorderRadius.circular(12)),
+        color: Colors.black.withValues(alpha: .6),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
@@ -64,16 +65,23 @@ class MultiUploadProgressIndicator extends StatelessWidget {
                   Text(
                     'Uploading files',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   if (onCancel != null && !isComplete)
                     IconButton(
                       onPressed: onCancel,
-                      icon: const Icon(Icons.close,
-                          color: Colors.white60, size: 18),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white60,
+                        size: 18,
+                      ),
                       padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 28, minHeight: 28),
+                      constraints: const BoxConstraints(
+                        minWidth: 28,
+                        minHeight: 28,
+                      ),
                     ),
                 ],
               ),
@@ -89,23 +97,29 @@ class MultiUploadProgressIndicator extends StatelessWidget {
                   child: isComplete
                       ? Container(
                           decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.2),
-                              shape: BoxShape.circle),
-                          child: const Icon(Icons.check,
-                              color: Colors.green, size: 18),
+                            color: Colors.green.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.green,
+                            size: 18,
+                          ),
                         )
                       : CircularProgressIndicator(
-                          value: progress.overallProgressPercentage / 100,
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withValues(alpha: .3),
-                          valueColor:
-                              const AlwaysStoppedAnimation<Color>(Colors.white),
-                          strokeWidth: 3,
-                        )
-                          .animate(onPlay: (controller) => controller.repeat())
-                          .shimmer(duration: const Duration(seconds: 1)),
+                              value: progress.overallProgressPercentage / 100,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: .3),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                              strokeWidth: 3,
+                            )
+                            .animate(
+                              onPlay: (controller) => controller.repeat(),
+                            )
+                            .shimmer(duration: const Duration(seconds: 1)),
                 ),
                 const SizedBox(width: 12),
                 Column(
@@ -116,24 +130,22 @@ class MultiUploadProgressIndicator extends StatelessWidget {
                           ? 'Upload complete'
                           : '${progress.overallProgressPercentage.toStringAsFixed(0)}% complete',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white, fontWeight: FontWeight.bold),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Row(
                       children: [
                         Text(
                           'Files: $completedFiles/$totalFiles',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
+                          style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: Colors.white70),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           '${(progress.totalBytesUploaded / (1024 * 1024)).toStringAsFixed(1)}/${(progress.totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
+                          style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: Colors.white70),
                         ),
                       ],
@@ -148,7 +160,9 @@ class MultiUploadProgressIndicator extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
                 child: TweenAnimationBuilder<double>(
                   tween: Tween<double>(
-                      begin: 0, end: progress.overallProgressPercentage / 100),
+                    begin: 0,
+                    end: progress.overallProgressPercentage / 100,
+                  ),
                   duration: const Duration(milliseconds: 300),
                   builder: (context, value, _) {
                     return Stack(
@@ -158,7 +172,8 @@ class MultiUploadProgressIndicator extends StatelessWidget {
                           minHeight: 6,
                           backgroundColor: Colors.white24,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              isComplete ? Colors.green : Colors.white),
+                            isComplete ? Colors.green : Colors.white,
+                          ),
                         ),
                         if (!isComplete)
                           Positioned.fill(
@@ -166,14 +181,17 @@ class MultiUploadProgressIndicator extends StatelessWidget {
                               child: LayoutBuilder(
                                 builder: (context, constraints) {
                                   return SizedBox(
-                                          height: 6,
-                                          width: constraints.maxWidth)
+                                        height: 6,
+                                        width: constraints.maxWidth,
+                                      )
                                       .animate(
-                                          onPlay: (controller) =>
-                                              controller.repeat())
+                                        onPlay: (controller) =>
+                                            controller.repeat(),
+                                      )
                                       .shimmer(
-                                          duration: const Duration(seconds: 1),
-                                          color: Colors.white30);
+                                        duration: const Duration(seconds: 1),
+                                        color: Colors.white30,
+                                      );
                                 },
                               ),
                             ),
@@ -187,10 +205,9 @@ class MultiUploadProgressIndicator extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   _getEstimatedTimeRemaining(),
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Colors.white60),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.white60),
                   textAlign: TextAlign.center,
                 ),
               ],

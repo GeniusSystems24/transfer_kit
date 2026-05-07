@@ -35,14 +35,15 @@ FilePathAndURL addCacheEntry({
   DateTime? createdAt,
   DateTime? updatedAt,
 }) {
-  final entry = FilePathAndURL.url(
-    url: url,
-    cacheKey: cacheKey,
-    expiresAt: expiresAt,
-  ).copyWith(
-    createdAt: createdAt ?? DateTime.now(),
-    updatedAt: updatedAt ?? DateTime.now(),
-  );
+  final entry =
+      FilePathAndURL.url(
+        url: url,
+        cacheKey: cacheKey,
+        expiresAt: expiresAt,
+      ).copyWith(
+        createdAt: createdAt ?? DateTime.now(),
+        updatedAt: updatedAt ?? DateTime.now(),
+      );
 
   // Override path to point at the real temp file
   entry.data[FilePathAndURL.pathTag] = file.path;

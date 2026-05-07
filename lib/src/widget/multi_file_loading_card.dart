@@ -42,7 +42,7 @@ class MultiFileLoadingCard extends StatefulWidget {
 
   /// Widget to display while downloading
   final Widget? Function(BuildContext context, MultiDownloadFileTask progress)?
-      downloadingWidget;
+  downloadingWidget;
 
   /// Custom controller to use instead of creating a new one
   /// If not provided, a new one will be created
@@ -100,7 +100,9 @@ class _MultiFileLoadingCardState extends State<MultiFileLoadingCard> {
     }
 
     // Check for all files completed to trigger onAllFilesLoaded callback
-    if (progress.isComplete && widget.onAllFilesLoaded != null && !_allFilesReported) {
+    if (progress.isComplete &&
+        widget.onAllFilesLoaded != null &&
+        !_allFilesReported) {
       _allFilesReported = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final files = progress.fileStatuses
@@ -119,7 +121,7 @@ class _MultiFileLoadingCardState extends State<MultiFileLoadingCard> {
       child: StreamBuilder<MultiDownloadFileTask>(
         stream: _fileController.downloadTasksParallelStream(
           filePathsAndUrls: {
-            for (final url in widget.urls) FilePathAndURL.url(url: url)
+            for (final url in widget.urls) FilePathAndURL.url(url: url),
           },
         ),
         builder: (context, snapshot) {
@@ -132,11 +134,15 @@ class _MultiFileLoadingCardState extends State<MultiFileLoadingCard> {
                 children: [
                   const Icon(Icons.error_outline, color: Colors.red, size: 48),
                   const SizedBox(height: 16),
-                  Text('Authentication error',
-                      style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    'Authentication error',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 8),
-                  Text('Please try again in a few minutes',
-                      style: Theme.of(context).textTheme.bodyMedium),
+                  Text(
+                    'Please try again in a few minutes',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ],
               );
             }
@@ -145,7 +151,8 @@ class _MultiFileLoadingCardState extends State<MultiFileLoadingCard> {
 
           if (!snapshot.hasData) {
             return Center(
-                child: widget.placeholder ?? const CircularProgressIndicator());
+              child: widget.placeholder ?? const CircularProgressIndicator(),
+            );
           }
 
           final progress = snapshot.data!;
@@ -160,11 +167,13 @@ class _MultiFileLoadingCardState extends State<MultiFileLoadingCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircularProgressIndicator(
-                        value: progress.overallProgressPercentage / 100),
+                      value: progress.overallProgressPercentage / 100,
+                    ),
                     const SizedBox(height: 16),
                     Text(
-                        '${progress.overallProgressPercentage.toStringAsFixed(1)}%',
-                        style: Theme.of(context).textTheme.bodyLarge),
+                      '${progress.overallProgressPercentage.toStringAsFixed(1)}%',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                     Text(
                       'Downloaded ${_getCompletedCount(progress)}/${progress.fileStatuses.length} files',
                       style: Theme.of(context).textTheme.bodyMedium,
@@ -188,11 +197,16 @@ class _MultiFileLoadingCardState extends State<MultiFileLoadingCard> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check_circle,
-                        color: Colors.green, size: 48),
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 48,
+                    ),
                     const SizedBox(height: 16),
-                    Text('Successfully downloaded ${progress.fileStatuses.length} files',
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Successfully downloaded ${progress.fileStatuses.length} files',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                   ],
                 ),
               );
@@ -219,17 +233,21 @@ class MultiDownloadProgressIndicator extends StatelessWidget {
       children: [
         // Overall progress indicator
         LinearProgressIndicator(
-            value: progress.overallProgressPercentage / 100, minHeight: 10),
+          value: progress.overallProgressPercentage / 100,
+          minHeight: 10,
+        ),
         const SizedBox(height: 8),
         Text(
-            'Overall: ${progress.overallProgressPercentage.toStringAsFixed(1)}%',
-            style: Theme.of(context).textTheme.bodyMedium),
+          'Overall: ${progress.overallProgressPercentage.toStringAsFixed(1)}%',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
         const SizedBox(height: 16),
 
         // Individual file progress indicators
         ...progress.fileStatuses.map((status) {
-          final fileName =
-              status.isComplete ? status.filePath.split('/').last : 'File';
+          final fileName = status.isComplete
+              ? status.filePath.split('/').last
+              : 'File';
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
@@ -239,22 +257,28 @@ class MultiDownloadProgressIndicator extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                        child: Text(fileName,
-                            style: Theme.of(context).textTheme.bodySmall,
-                            overflow: TextOverflow.ellipsis)),
+                      child: Text(
+                        fileName,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     Text(
-                        '${status.progress.progressPercentage.toStringAsFixed(1)}%',
-                        style: Theme.of(context).textTheme.bodySmall),
+                      '${status.progress.progressPercentage.toStringAsFixed(1)}%',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 AspectRatio(
                   aspectRatio: 1,
                   child: SizedBox(
-                      width: 25,
-                      child: LinearProgressIndicator(
-                          value: status.progress.progressPercentage / 100,
-                          minHeight: 6)),
+                    width: 25,
+                    child: LinearProgressIndicator(
+                      value: status.progress.progressPercentage / 100,
+                      minHeight: 6,
+                    ),
+                  ),
                 ),
               ],
             ),

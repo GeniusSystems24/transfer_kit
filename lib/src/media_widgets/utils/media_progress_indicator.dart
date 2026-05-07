@@ -112,10 +112,9 @@ class MediaProgressWithPercentage extends StatelessWidget {
       progressColor: progressColor,
       center: Text(
         '$percentage%',
-        style: textStyle ??
-            theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+        style:
+            textStyle ??
+            theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -175,10 +174,7 @@ class MediaLinearProgress extends StatelessWidget {
         children: [
           Expanded(child: progressBar),
           const SizedBox(width: 8),
-          Text(
-            '$percentage%',
-            style: theme.textTheme.labelSmall,
-          ),
+          Text('$percentage%', style: theme.textTheme.labelSmall),
         ],
       );
     }

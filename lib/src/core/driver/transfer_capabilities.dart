@@ -21,9 +21,9 @@ class TransferCapabilities {
     this.supportsBackgroundTransfer = false,
     this.supportsRetry = false,
   }) : assert(
-          !supportsResume || supportsPause,
-          'supportsResume requires supportsPause to be true',
-        );
+         !supportsResume || supportsPause,
+         'supportsResume requires supportsPause to be true',
+       );
 
   final bool supportsUpload;
   final bool supportsDownload;

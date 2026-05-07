@@ -27,9 +27,9 @@ final Map<String, StreamController<FileTask>> _uploadStreamCache = {};
 final Map<String, int> _downloadStreamRefCount = {};
 final Map<String, int> _uploadStreamRefCount = {};
 final Map<String, StreamSubscription<TransferProgressEvent>>
-    _downloadSubscriptions = {};
+_downloadSubscriptions = {};
 final Map<String, StreamSubscription<TransferProgressEvent>>
-    _uploadSubscriptions = {};
+_uploadSubscriptions = {};
 
 Duration get _cleanupDelay => TransferKitConfig.instance.streamCleanupDelay;
 
@@ -102,57 +102,64 @@ Stream<FileTask> _getSharedDownloadStream({
     cacheKey: task.id,
   );
 
-  _downloadSubscriptions[key] = driver.download(request).listen(
-    (event) async {
-      if (event is TransferProgressUpdate) {
-        final updated = task.copyWith(
-          state: FileTaskState.running,
-          progress: FileProgress(
-            bytesTransferred: event.bytesTransferred,
-            totalBytes: event.totalBytes,
-          ),
-          lastUpdatedAt: DateTime.now(),
-        );
-        onUpdate(updated);
-        if (!controller.isClosed) controller.add(updated);
-      } else if (event is TransferCompleted) {
-        final updated = task.copyWith(
-          state: FileTaskState.completed,
-          filePath: event.localPath ?? task.filePath,
-          progress: FileProgress(bytesTransferred: 1, totalBytes: 1),
-          lastUpdatedAt: DateTime.now(),
-        );
-        await onComplete(updated);
-        if (!controller.isClosed) {
-          controller.add(updated);
-          controller.close();
-        }
-        _cleanupDownloadStream(key);
-      } else if (event is TransferFailed) {
-        final errorTask = task.copyWith(
-          state: FileTaskState.error,
-          errorMessage: event.error.toString(),
-        );
-        onError(errorTask, event.error);
-        if (!controller.isClosed) {
-          controller
-              .addError(FileDownloadException('Download failed: ${event.error}'));
-          controller.close();
-        }
-        _cleanupDownloadStream(key);
-      }
-    },
-    onError: (error) {
-      final errorTask =
-          task.copyWith(state: FileTaskState.error, errorMessage: error.toString());
-      onError(errorTask, error);
-      if (!controller.isClosed) {
-        controller.addError(FileDownloadException('Download failed: $error'));
-        controller.close();
-      }
-      _cleanupDownloadStream(key);
-    },
-  );
+  _downloadSubscriptions[key] = driver
+      .download(request)
+      .listen(
+        (event) async {
+          if (event is TransferProgressUpdate) {
+            final updated = task.copyWith(
+              state: FileTaskState.running,
+              progress: FileProgress(
+                bytesTransferred: event.bytesTransferred,
+                totalBytes: event.totalBytes,
+              ),
+              lastUpdatedAt: DateTime.now(),
+            );
+            onUpdate(updated);
+            if (!controller.isClosed) controller.add(updated);
+          } else if (event is TransferCompleted) {
+            final updated = task.copyWith(
+              state: FileTaskState.completed,
+              filePath: event.localPath ?? task.filePath,
+              progress: FileProgress(bytesTransferred: 1, totalBytes: 1),
+              lastUpdatedAt: DateTime.now(),
+            );
+            await onComplete(updated);
+            if (!controller.isClosed) {
+              controller.add(updated);
+              controller.close();
+            }
+            _cleanupDownloadStream(key);
+          } else if (event is TransferFailed) {
+            final errorTask = task.copyWith(
+              state: FileTaskState.error,
+              errorMessage: event.error.toString(),
+            );
+            onError(errorTask, event.error);
+            if (!controller.isClosed) {
+              controller.addError(
+                FileDownloadException('Download failed: ${event.error}'),
+              );
+              controller.close();
+            }
+            _cleanupDownloadStream(key);
+          }
+        },
+        onError: (error) {
+          final errorTask = task.copyWith(
+            state: FileTaskState.error,
+            errorMessage: error.toString(),
+          );
+          onError(errorTask, error);
+          if (!controller.isClosed) {
+            controller.addError(
+              FileDownloadException('Download failed: $error'),
+            );
+            controller.close();
+          }
+          _cleanupDownloadStream(key);
+        },
+      );
 
   // Emit running state immediately
   final runningTask = task.copyWith(state: FileTaskState.running);
@@ -186,57 +193,62 @@ Stream<FileTask> _getSharedUploadStream({
     destinationPath: task.destinationPath,
   );
 
-  _uploadSubscriptions[key] = driver.upload(request).listen(
-    (event) async {
-      if (event is TransferProgressUpdate) {
-        final updated = task.copyWith(
-          state: FileTaskState.running,
-          progress: FileProgress(
-            bytesTransferred: event.bytesTransferred,
-            totalBytes: event.totalBytes,
-          ),
-          lastUpdatedAt: DateTime.now(),
-        );
-        onUpdate(updated);
-        if (!controller.isClosed) controller.add(updated);
-      } else if (event is TransferCompleted) {
-        final updated = task.copyWith(
-          state: FileTaskState.completed,
-          downloadUrl: event.remoteIdentifier ?? task.downloadUrl,
-          progress: FileProgress(bytesTransferred: 1, totalBytes: 1),
-          lastUpdatedAt: DateTime.now(),
-        );
-        await onComplete(updated, event.remoteIdentifier);
-        if (!controller.isClosed) {
-          controller.add(updated);
-          controller.close();
-        }
-        _cleanupUploadStream(key);
-      } else if (event is TransferFailed) {
-        final errorTask = task.copyWith(
-          state: FileTaskState.error,
-          errorMessage: event.error.toString(),
-        );
-        onError(errorTask, event.error);
-        if (!controller.isClosed) {
-          controller
-              .addError(FileUploadException('Upload failed: ${event.error}'));
-          controller.close();
-        }
-        _cleanupUploadStream(key);
-      }
-    },
-    onError: (error) {
-      final errorTask =
-          task.copyWith(state: FileTaskState.error, errorMessage: error.toString());
-      onError(errorTask, error);
-      if (!controller.isClosed) {
-        controller.addError(FileUploadException('Upload failed: $error'));
-        controller.close();
-      }
-      _cleanupUploadStream(key);
-    },
-  );
+  _uploadSubscriptions[key] = driver
+      .upload(request)
+      .listen(
+        (event) async {
+          if (event is TransferProgressUpdate) {
+            final updated = task.copyWith(
+              state: FileTaskState.running,
+              progress: FileProgress(
+                bytesTransferred: event.bytesTransferred,
+                totalBytes: event.totalBytes,
+              ),
+              lastUpdatedAt: DateTime.now(),
+            );
+            onUpdate(updated);
+            if (!controller.isClosed) controller.add(updated);
+          } else if (event is TransferCompleted) {
+            final updated = task.copyWith(
+              state: FileTaskState.completed,
+              downloadUrl: event.remoteIdentifier ?? task.downloadUrl,
+              progress: FileProgress(bytesTransferred: 1, totalBytes: 1),
+              lastUpdatedAt: DateTime.now(),
+            );
+            await onComplete(updated, event.remoteIdentifier);
+            if (!controller.isClosed) {
+              controller.add(updated);
+              controller.close();
+            }
+            _cleanupUploadStream(key);
+          } else if (event is TransferFailed) {
+            final errorTask = task.copyWith(
+              state: FileTaskState.error,
+              errorMessage: event.error.toString(),
+            );
+            onError(errorTask, event.error);
+            if (!controller.isClosed) {
+              controller.addError(
+                FileUploadException('Upload failed: ${event.error}'),
+              );
+              controller.close();
+            }
+            _cleanupUploadStream(key);
+          }
+        },
+        onError: (error) {
+          final errorTask = task.copyWith(
+            state: FileTaskState.error,
+            errorMessage: error.toString(),
+          );
+          onError(errorTask, error);
+          if (!controller.isClosed) {
+            controller.addError(FileUploadException('Upload failed: $error'));
+            controller.close();
+          }
+          _cleanupUploadStream(key);
+        },
+      );
 
   final runningTask = task.copyWith(state: FileTaskState.running);
   if (!controller.isClosed) controller.add(runningTask);
@@ -283,8 +295,9 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
   }
 
   int removeAllByGroupIds(Iterable<String> groupIds, {bool notify = true}) {
-    final items =
-        value.where((task) => groupIds.contains(task.groupId)).toSet();
+    final items = value
+        .where((task) => groupIds.contains(task.groupId))
+        .toSet();
     if (items.isNotEmpty) return removeAll(items, notify: notify);
     return 0;
   }
@@ -473,7 +486,7 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
   Future<bool> pauseTask(String taskId) async {
     final driver = TransferKitConfig.instance.driver;
     if (!driver.capabilities.supportsPause) {
-      throw UnsupportedCapabilityException(
+      throw const UnsupportedCapabilityException(
         'The active driver does not support pause.',
         capability: 'supportsPause',
       );
@@ -494,7 +507,7 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
   Future<bool> resumeTask(String taskId) async {
     final driver = TransferKitConfig.instance.driver;
     if (!driver.capabilities.supportsResume) {
-      throw UnsupportedCapabilityException(
+      throw const UnsupportedCapabilityException(
         'The active driver does not support resume.',
         capability: 'supportsResume',
       );
@@ -515,7 +528,7 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
   Future<bool> cancelTask(String taskId) async {
     final driver = TransferKitConfig.instance.driver;
     if (!driver.capabilities.supportsCancel) {
-      throw UnsupportedCapabilityException(
+      throw const UnsupportedCapabilityException(
         'The active driver does not support cancel.',
         capability: 'supportsCancel',
       );
@@ -576,17 +589,21 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
   }
 
   Future<void> resumeTasksByGroupId(String groupId) async {
-    for (var task in value
-        .where((t) => t.groupId == groupId && (t.isPaused || t.isWaiting))
-        .toList()) {
+    for (var task
+        in value
+            .where((t) => t.groupId == groupId && (t.isPaused || t.isWaiting))
+            .toList()) {
       await startTask(task.id);
     }
   }
 
   Future<void> cancelTasksByGroupId(String groupId) async {
-    for (var task in value
-        .where((t) => t.groupId == groupId && !t.isComplete && !t.isCancelled)
-        .toList()) {
+    for (var task
+        in value
+            .where(
+              (t) => t.groupId == groupId && !t.isComplete && !t.isCancelled,
+            )
+            .toList()) {
       await cancelTask(task.id);
     }
   }
@@ -606,7 +623,7 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
   }) async {
     final driver = TransferKitConfig.instance.driver;
     if (!driver.capabilities.supportsUpload) {
-      throw UnsupportedCapabilityException(
+      throw const UnsupportedCapabilityException(
         'The active driver does not support upload.',
         capability: 'supportsUpload',
       );
@@ -668,14 +685,15 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
   }) async {
     final driver = TransferKitConfig.instance.driver;
     if (!driver.capabilities.supportsDownload) {
-      throw UnsupportedCapabilityException(
+      throw const UnsupportedCapabilityException(
         'The active driver does not support download.',
         capability: 'supportsDownload',
       );
     }
 
     if (forceRefresh) {
-      final existing = (cacheKey != null
+      final existing =
+          (cacheKey != null
               ? FilePathAndURLRepository.instance.getByKey(cacheKey)
               : null) ??
           FilePathAndURLRepository.instance.getByUrl(url);
@@ -750,13 +768,13 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
       driver: driver,
       onUpdate: addOrUpdate,
       onComplete: (updatedTask) async {
-        final existingEntry =
-            FilePathAndURLRepository.instance.getByUrl(updatedTask.downloadUrl ?? '');
+        final existingEntry = FilePathAndURLRepository.instance.getByUrl(
+          updatedTask.downloadUrl ?? '',
+        );
         var fpau = updatedTask.filePathAndURL;
         final extracted = await MetadataExtractionService().extractMetadata(
           File(updatedTask.filePath),
-          existingMetadata:
-              existingEntry?.metadata ?? fpau.metadata,
+          existingMetadata: existingEntry?.metadata ?? fpau.metadata,
         );
         fpau = fpau.copyWithMergedMetadata(extracted);
         final now = DateTime.now();
@@ -818,7 +836,10 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     bool autoStart = true,
     StreamController<MultiDownloadFileTask>? controller,
   }) {
-    assert(filePathsAndUrls.isNotEmpty, 'File paths and urls must not be empty');
+    assert(
+      filePathsAndUrls.isNotEmpty,
+      'File paths and urls must not be empty',
+    );
     final newController =
         controller ?? StreamController<MultiDownloadFileTask>();
 
@@ -829,7 +850,8 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
       group: group,
     ).catchError((error) {
       newController.addError(
-          FileDownloadException('Failed to download files in parallel: $error'));
+        FileDownloadException('Failed to download files in parallel: $error'),
+      );
       newController.close();
     });
 
@@ -857,8 +879,9 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
         );
       }
 
-      controller
-          .add(MultiDownloadFileTask.fromTasks(tasks: tasks, taskId: group.id));
+      controller.add(
+        MultiDownloadFileTask.fromTasks(tasks: tasks, taskId: group.id),
+      );
 
       int completedCount = tasks.where((t) => t.isComplete).length;
 
@@ -870,7 +893,8 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
           tasks[i] = updatedTask;
           if (!controller.isClosed) {
             controller.add(
-                MultiDownloadFileTask.fromTasks(tasks: tasks, taskId: group.id));
+              MultiDownloadFileTask.fromTasks(tasks: tasks, taskId: group.id),
+            );
           }
           if (updatedTask.isComplete) {
             completedCount++;
@@ -882,13 +906,15 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
       }
 
       if (!controller.isClosed) {
-        controller
-            .add(MultiDownloadFileTask.fromTasks(tasks: tasks, taskId: group.id));
+        controller.add(
+          MultiDownloadFileTask.fromTasks(tasks: tasks, taskId: group.id),
+        );
       }
     } catch (e) {
       if (!controller.isClosed) {
         controller.addError(
-            FileDownloadException('Failed to download files in parallel: $e'));
+          FileDownloadException('Failed to download files in parallel: $e'),
+        );
         controller.close();
       }
     }
@@ -901,7 +927,10 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     bool autoStart = true,
     StreamController<MultiUploadFileTask>? controller,
   }) {
-    assert(filePathsAndUrls.isNotEmpty, 'File paths and urls must not be empty');
+    assert(
+      filePathsAndUrls.isNotEmpty,
+      'File paths and urls must not be empty',
+    );
     final newController = controller ?? StreamController<MultiUploadFileTask>();
 
     _uploadTasksParallelStream(
@@ -910,8 +939,9 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
       autoStart: autoStart,
       group: group,
     ).catchError((error) {
-      newController
-          .addError(FileUploadException('Failed to upload files in parallel: $error'));
+      newController.addError(
+        FileUploadException('Failed to upload files in parallel: $error'),
+      );
       newController.close();
     });
 
@@ -940,8 +970,9 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
         );
       }
 
-      controller
-          .add(MultiUploadFileTask.fromTasks(tasks: tasks, taskId: group.id));
+      controller.add(
+        MultiUploadFileTask.fromTasks(tasks: tasks, taskId: group.id),
+      );
 
       int completedCount = tasks.where((t) => t.isComplete).length;
 
@@ -953,7 +984,8 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
           tasks[i] = updatedTask;
           if (!controller.isClosed) {
             controller.add(
-                MultiUploadFileTask.fromTasks(tasks: tasks, taskId: group.id));
+              MultiUploadFileTask.fromTasks(tasks: tasks, taskId: group.id),
+            );
           }
           if (updatedTask.isComplete) {
             completedCount++;
@@ -966,7 +998,8 @@ class FileTaskRepository extends GetStorageRepository<FileTask> {
     } catch (e) {
       if (!controller.isClosed) {
         controller.addError(
-            FileUploadException('Failed to upload files in parallel: $e'));
+          FileUploadException('Failed to upload files in parallel: $e'),
+        );
         controller.close();
       }
     }

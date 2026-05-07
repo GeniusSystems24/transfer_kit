@@ -24,8 +24,7 @@ final class TransferProgressUpdate extends TransferProgressEvent {
   /// Transfer completion fraction in `[0.0, 1.0]`.
   ///
   /// Returns `0.0` when [totalBytes] is `0`.
-  double get percentage =>
-      totalBytes > 0 ? bytesTransferred / totalBytes : 0.0;
+  double get percentage => totalBytes > 0 ? bytesTransferred / totalBytes : 0.0;
 }
 
 /// Emitted when the transfer completes successfully.

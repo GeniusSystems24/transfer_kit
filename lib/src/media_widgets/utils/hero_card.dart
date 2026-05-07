@@ -25,17 +25,11 @@ class HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget heroChild = Hero(
       tag: tag,
-      child: Material(
-        type: MaterialType.transparency,
-        child: child,
-      ),
+      child: Material(type: MaterialType.transparency, child: child),
     );
 
     if (onTap != null) {
-      heroChild = GestureDetector(
-        onTap: onTap,
-        child: heroChild,
-      );
+      heroChild = GestureDetector(onTap: onTap, child: heroChild);
     }
 
     return heroChild;

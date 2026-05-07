@@ -21,7 +21,7 @@ class DocumentDownloadCard extends StatelessWidget {
   final Widget Function(BuildContext context, TaskItem item) completedBuilder;
   final Widget Function(BuildContext context, TaskItem? item) loadingBuilder;
   final Widget Function(BuildContext context, TaskItem? item, Exception? error)?
-      errorBuilder;
+  errorBuilder;
 
   /// Icon color for action buttons
   final Color? iconColor;
@@ -49,8 +49,8 @@ class DocumentDownloadCard extends StatelessWidget {
       case TaskStatus.running:
         return (item?.allowPause ?? false)
             ? onPause == null
-                ? null
-                : () => onPause?.call(item!)
+                  ? null
+                  : () => onPause?.call(item!)
             : null;
       case TaskStatus.paused:
         return onResume == null ? null : () => onResume?.call(item!);
@@ -137,8 +137,9 @@ class DocumentDownloadCard extends StatelessWidget {
                 margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color:
-                      theme.colorScheme.errorContainer.withValues(alpha: 0.1),
+                  color: theme.colorScheme.errorContainer.withValues(
+                    alpha: 0.1,
+                  ),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: theme.colorScheme.error.withValues(alpha: 0.3),

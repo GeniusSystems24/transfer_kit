@@ -177,15 +177,11 @@ class FileModel {
   }) : this._(
          fileName: fileName ?? localPath.fileName,
          localPath: localPath,
-         destinationPath:
-             destinationPath == null
-                 ? null
-                 : destinationPath.contains('.')
-                 ? destinationPath
-                 : '$destinationPath/${localPath.fileName}'.replaceAll(
-                   '//',
-                   '/',
-                 ),
+         destinationPath: destinationPath == null
+             ? null
+             : destinationPath.contains('.')
+             ? destinationPath
+             : '$destinationPath/${localPath.fileName}'.replaceAll('//', '/'),
          size: size,
          width: width,
          height: height,
@@ -295,13 +291,12 @@ class FileModel {
   FileTypeEnum get fileType => fileName?.getFileType() ?? FileTypeEnum.file;
 
   /// Returns a FilePathAndURL for upload operations.
-  FilePathAndURL? get fileUploadPathAndUrl =>
-      localPath == null
-          ? null
-          : FilePathAndURL.local(
-            path: localPath!,
-            destinationPath: destinationPath!,
-          );
+  FilePathAndURL? get fileUploadPathAndUrl => localPath == null
+      ? null
+      : FilePathAndURL.local(
+          path: localPath!,
+          destinationPath: destinationPath!,
+        );
 
   /// Returns a FilePathAndURL for download operations.
   FilePathAndURL? get fileDownloadPathAndUrl =>

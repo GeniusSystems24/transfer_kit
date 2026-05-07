@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:transfer_kit/transfer_kit.dart';
 
 import 'screens/single_download_screen.dart';
@@ -15,13 +14,9 @@ import 'screens/chat_demo_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    // options: DefaultFirebaseOptions.currentPlatform,
-  );
-
   // Enable all settings for TransferKit
   await TransferKitConfig.init(
+    driver: LocalFileCopyDriver(),
     maxConcurrentDownloads: 5,
     maxConcurrentUploads: 3,
     streamCleanupDelay: const Duration(seconds: 3),

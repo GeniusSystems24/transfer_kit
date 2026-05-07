@@ -49,7 +49,7 @@ class MultiFileUploadCard extends StatefulWidget {
 
   /// Widget to display while uploading
   final Widget? Function(BuildContext context, MultiUploadFileTask progress)?
-      uploadingWidget;
+  uploadingWidget;
 
   /// Custom controller to use instead of creating a new one
   /// If not provided, a new one will be created
@@ -97,7 +97,9 @@ class _MultiFileUploadCardState extends State<MultiFileUploadCard> {
     if (widget.onFileUploaded != null) {
       for (int i = 0; i < progress.tasks.length; i++) {
         final task = progress.tasks[i];
-        if (task.isComplete && task.downloadUrl != null && !_reportedFileIndices.contains(i)) {
+        if (task.isComplete &&
+            task.downloadUrl != null &&
+            !_reportedFileIndices.contains(i)) {
           _reportedFileIndices.add(i);
           WidgetsBinding.instance.addPostFrameCallback((_) {
             widget.onFileUploaded!(task.downloadUrl!, i);
@@ -107,7 +109,9 @@ class _MultiFileUploadCardState extends State<MultiFileUploadCard> {
     }
 
     // Check for all files completed to trigger onAllFilesUploaded callback
-    if (progress.isComplete && widget.onAllFilesUploaded != null && !_allFilesReported) {
+    if (progress.isComplete &&
+        widget.onAllFilesUploaded != null &&
+        !_allFilesReported) {
       _allFilesReported = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final downloadUrls = progress.tasks
@@ -125,7 +129,8 @@ class _MultiFileUploadCardState extends State<MultiFileUploadCard> {
       constraints: widget.constraints,
       child: StreamBuilder<MultiUploadFileTask>(
         stream: _fileController.uploadTasksParallelStream(
-            filePathsAndUrls: widget.filePathsAndUrls),
+          filePathsAndUrls: widget.filePathsAndUrls,
+        ),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             final error = snapshot.error.toString();
@@ -136,11 +141,15 @@ class _MultiFileUploadCardState extends State<MultiFileUploadCard> {
                 children: [
                   const Icon(Icons.error_outline, color: Colors.red, size: 48),
                   const SizedBox(height: 16),
-                  Text('Authentication error',
-                      style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    'Authentication error',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 8),
-                  Text('Please try again in a few minutes',
-                      style: Theme.of(context).textTheme.bodyMedium),
+                  Text(
+                    'Please try again in a few minutes',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ],
               );
             }
@@ -149,7 +158,8 @@ class _MultiFileUploadCardState extends State<MultiFileUploadCard> {
 
           if (!snapshot.hasData) {
             return Center(
-                child: widget.placeholder ?? const CircularProgressIndicator());
+              child: widget.placeholder ?? const CircularProgressIndicator(),
+            );
           }
 
           final progress = snapshot.data!;
@@ -164,11 +174,13 @@ class _MultiFileUploadCardState extends State<MultiFileUploadCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircularProgressIndicator(
-                        value: progress.overallProgressPercentage / 100),
+                      value: progress.overallProgressPercentage / 100,
+                    ),
                     const SizedBox(height: 16),
                     Text(
-                        '${progress.overallProgressPercentage.toStringAsFixed(1)}%',
-                        style: Theme.of(context).textTheme.bodyLarge),
+                      '${progress.overallProgressPercentage.toStringAsFixed(1)}%',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                     Text(
                       'Uploaded ${_getCompletedCount(progress)}/${progress.tasks.length} files',
                       style: Theme.of(context).textTheme.bodyMedium,
@@ -192,11 +204,16 @@ class _MultiFileUploadCardState extends State<MultiFileUploadCard> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check_circle,
-                        color: Colors.green, size: 48),
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 48,
+                    ),
                     const SizedBox(height: 16),
-                    Text('Successfully uploaded ${progress.tasks.length} files',
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Successfully uploaded ${progress.tasks.length} files',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                   ],
                 ),
               );

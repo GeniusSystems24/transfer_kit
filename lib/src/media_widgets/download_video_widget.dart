@@ -142,11 +142,12 @@ class _DownloadVideoWidgetState extends State<DownloadVideoWidget>
         return StreamBuilder(
           initialData:
               FileTaskController.instance.fileUpdates[downloadTask.url],
-          stream: (streamController ??
-                  FileTaskController.instance.createFileController(
-                    downloadTask.url,
-                  ))
-              .stream,
+          stream:
+              (streamController ??
+                      FileTaskController.instance.createFileController(
+                        downloadTask.url,
+                      ))
+                  .stream,
           builder: (context, asyncSnapshot) {
             var taskItem = asyncSnapshot.data;
             return MediaDownloadCard(
@@ -161,8 +162,9 @@ class _DownloadVideoWidgetState extends State<DownloadVideoWidget>
               onRetry: (item) => FileTaskController.instance.retry(item),
               completedBuilder: (context, item) =>
                   _videoPlayerBuild(context, item.filePath),
-              thumbnailProvider:
-                  thumbnail != null ? MemoryImage(thumbnail) : null,
+              thumbnailProvider: thumbnail != null
+                  ? MemoryImage(thumbnail)
+                  : null,
             );
           },
         );
@@ -223,10 +225,7 @@ class VideoPreviewWidget extends StatelessWidget {
         children: [
           // Thumbnail or placeholder
           if (thumbnail != null)
-            Image.memory(
-              thumbnail!,
-              fit: BoxFit.cover,
-            )
+            Image.memory(thumbnail!, fit: BoxFit.cover)
           else
             Container(
               color: theme.colorScheme.surfaceContainerHighest,
@@ -238,9 +237,7 @@ class VideoPreviewWidget extends StatelessWidget {
             ),
 
           // Overlay
-          Container(
-            color: Colors.black.withValues(alpha: 0.3),
-          ),
+          Container(color: Colors.black.withValues(alpha: 0.3)),
 
           // Play button
           Center(

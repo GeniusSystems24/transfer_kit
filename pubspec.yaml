@@ -1,6 +1,6 @@
 name: transfer_kit
 description: A comprehensive provider-agnostic file management solution for Flutter - upload, download, progress tracking, intelligent caching, background transfers, and beautiful UI widgets.
-version: 2.1.0+1
+version: 3.0.0
 homepage: https://github.com/geniussystems24/transfer_kit
 
 

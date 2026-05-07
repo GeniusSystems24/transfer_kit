@@ -33,18 +33,18 @@ class BackgroundTransferService {
 
   /// Notification channel
   static NotificationChannel channel() => NotificationChannel(
-        channelKey: notificationChannelKey,
-        channelName: notificationChannelName,
-        channelDescription: notificationChannelDescription,
-        defaultColor: const Color(0xFF9D50DD),
-        ledColor: const Color(0xFF9D50DD),
-        importance: NotificationImportance.High,
-        playSound: true,
-        enableVibration: true,
-        enableLights: true,
-        locked: true, // Prevent user from dismissing
-        onlyAlertOnce: false, // Allow multiple alerts for updates
-      );
+    channelKey: notificationChannelKey,
+    channelName: notificationChannelName,
+    channelDescription: notificationChannelDescription,
+    defaultColor: const Color(0xFF9D50DD),
+    ledColor: const Color(0xFF9D50DD),
+    importance: NotificationImportance.High,
+    playSound: true,
+    enableVibration: true,
+    enableLights: true,
+    locked: true, // Prevent user from dismissing
+    onlyAlertOnce: false, // Allow multiple alerts for updates
+  );
 
   // Notification IDs (use different ranges for different notification types)
   static const int _progressNotificationIdStart =

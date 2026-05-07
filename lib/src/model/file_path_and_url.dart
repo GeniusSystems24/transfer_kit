@@ -22,16 +22,17 @@ class FilePathAndURL extends GetStorageMethods {
     DateTime? lastAccessedAt,
     DateTime? expiresAt,
   }) : data = {
-          pathTag: path,
-          urlTag: url,
-          destinationPathTag: destinationPath,
-          if (metadata != null) metadataTag: metadata.toMap(),
-          if (cacheKey != null) cacheKeyTag: cacheKey,
-          if (createdAt != null) createdAtTag: createdAt.toIso8601String(),
-          if (updatedAt != null) updatedAtTag: updatedAt.toIso8601String(),
-          if (lastAccessedAt != null) lastAccessedAtTag: lastAccessedAt.toIso8601String(),
-          if (expiresAt != null) expiresAtTag: expiresAt.toIso8601String(),
-        };
+         pathTag: path,
+         urlTag: url,
+         destinationPathTag: destinationPath,
+         if (metadata != null) metadataTag: metadata.toMap(),
+         if (cacheKey != null) cacheKeyTag: cacheKey,
+         if (createdAt != null) createdAtTag: createdAt.toIso8601String(),
+         if (updatedAt != null) updatedAtTag: updatedAt.toIso8601String(),
+         if (lastAccessedAt != null)
+           lastAccessedAtTag: lastAccessedAt.toIso8601String(),
+         if (expiresAt != null) expiresAtTag: expiresAt.toIso8601String(),
+       };
 
   /// Creates a FilePathAndURL for a local file to be uploaded.
   ///
@@ -53,10 +54,10 @@ class FilePathAndURL extends GetStorageMethods {
     required String destinationPath,
     MediaMetadata? metadata,
   }) : data = {
-          pathTag: path,
-          destinationPathTag: destinationPath,
-          if (metadata != null) metadataTag: metadata.toMap(),
-        };
+         pathTag: path,
+         destinationPathTag: destinationPath,
+         if (metadata != null) metadataTag: metadata.toMap(),
+       };
 
   /// Creates a FilePathAndURL for a remote file to be downloaded.
   ///
@@ -81,12 +82,12 @@ class FilePathAndURL extends GetStorageMethods {
     String? cacheKey,
     DateTime? expiresAt,
   }) : data = {
-          pathTag: (cacheKey ?? url).toHashName().toCachedPath(),
-          urlTag: url,
-          if (metadata != null) metadataTag: metadata.toMap(),
-          if (cacheKey != null) cacheKeyTag: cacheKey,
-          if (expiresAt != null) expiresAtTag: expiresAt.toIso8601String(),
-        };
+         pathTag: (cacheKey ?? url).toHashName().toCachedPath(),
+         urlTag: url,
+         if (metadata != null) metadataTag: metadata.toMap(),
+         if (cacheKey != null) cacheKeyTag: cacheKey,
+         if (expiresAt != null) expiresAtTag: expiresAt.toIso8601String(),
+       };
 
   FilePathAndURL.fromMap(this.data);
 
@@ -191,18 +192,17 @@ class FilePathAndURL extends GetStorageMethods {
     DateTime? updatedAt,
     DateTime? lastAccessedAt,
     DateTime? expiresAt,
-  }) =>
-      FilePathAndURL._(
-        path: path,
-        url: url ?? this.url,
-        destinationPath: destinationPath ?? this.destinationPath,
-        metadata: metadata ?? this.metadata,
-        cacheKey: cacheKey ?? this.cacheKey,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        lastAccessedAt: lastAccessedAt ?? this.lastAccessedAt,
-        expiresAt: expiresAt ?? this.expiresAt,
-      );
+  }) => FilePathAndURL._(
+    path: path,
+    url: url ?? this.url,
+    destinationPath: destinationPath ?? this.destinationPath,
+    metadata: metadata ?? this.metadata,
+    cacheKey: cacheKey ?? this.cacheKey,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    lastAccessedAt: lastAccessedAt ?? this.lastAccessedAt,
+    expiresAt: expiresAt ?? this.expiresAt,
+  );
 
   /// Creates a copy with merged metadata from another source.
   ///

@@ -224,10 +224,9 @@ class FileTask extends GetStorageMethods {
   static const String lastUpdatedAtTag = 'lastUpdatedAt';
 
   /// Get the number of bytes transferred
-  FileProgress get progress =>
-      data[progressTag] != null
-          ? FileProgress.fromMap(data.getMap(progressTag)!)
-          : state.defaultProgress;
+  FileProgress get progress => data[progressTag] != null
+      ? FileProgress.fromMap(data.getMap(progressTag)!)
+      : state.defaultProgress;
   set progress(FileProgress value) => data[progressTag] = value.toMap();
   static const String progressTag = 'progress';
 

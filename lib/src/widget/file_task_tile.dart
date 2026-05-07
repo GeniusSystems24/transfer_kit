@@ -76,10 +76,9 @@ class FileTaskTile extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                             color: theme.colorScheme.surfaceContainerHighest,
                           ),
-                          child:
-                              isImage && task.filePath.isNotEmpty
-                                  ? _buildImageThumbnail(task.filePath)
-                                  : _buildFileTypeIcon(theme),
+                          child: isImage && task.filePath.isNotEmpty
+                              ? _buildImageThumbnail(task.filePath)
+                              : _buildFileTypeIcon(theme),
                         ),
                         SizedBox(width: compact ? 8 : 12),
                       ],
@@ -180,10 +179,9 @@ class FileTaskTile extends StatelessWidget {
                                           ),
                                           child: LinearProgressIndicator(
                                             value: value,
-                                            backgroundColor:
-                                                theme
-                                                    .colorScheme
-                                                    .surfaceContainerHighest,
+                                            backgroundColor: theme
+                                                .colorScheme
+                                                .surfaceContainerHighest,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(
                                                   statusColor,

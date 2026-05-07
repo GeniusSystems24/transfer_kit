@@ -58,11 +58,7 @@ abstract class FileException implements Exception {
 /// ```
 class FileDeleteException extends FileException {
   /// Creates a new [FileDeleteException] with the given [message].
-  const FileDeleteException(
-    super.message, {
-    super.cause,
-    super.stackTrace,
-  });
+  const FileDeleteException(super.message, {super.cause, super.stackTrace});
 }
 
 /// Exception thrown when a file upload operation fails.
@@ -82,11 +78,7 @@ class FileDeleteException extends FileException {
 /// ```
 class FileUploadException extends FileException {
   /// Creates a new [FileUploadException] with the given [message].
-  const FileUploadException(
-    super.message, {
-    super.cause,
-    super.stackTrace,
-  });
+  const FileUploadException(super.message, {super.cause, super.stackTrace});
 }
 
 /// Exception thrown when a file download operation fails.
@@ -106,11 +98,7 @@ class FileUploadException extends FileException {
 /// ```
 class FileDownloadException extends FileException {
   /// Creates a new [FileDownloadException] with the given [message].
-  const FileDownloadException(
-    super.message, {
-    super.cause,
-    super.stackTrace,
-  });
+  const FileDownloadException(super.message, {super.cause, super.stackTrace});
 }
 
 /// Exception thrown when a file cache operation fails.
@@ -130,11 +118,7 @@ class FileDownloadException extends FileException {
 /// ```
 class FileCacheException extends FileException {
   /// Creates a new [FileCacheException] with the given [message].
-  const FileCacheException(
-    super.message, {
-    super.cause,
-    super.stackTrace,
-  });
+  const FileCacheException(super.message, {super.cause, super.stackTrace});
 }
 
 /// Exception thrown when a file task operation fails.
@@ -157,9 +141,5 @@ class FileCacheException extends FileException {
 /// ```
 class FileTaskException extends FileException {
   /// Creates a new [FileTaskException] with the given [message].
-  const FileTaskException(
-    super.message, {
-    super.cause,
-    super.stackTrace,
-  });
+  const FileTaskException(super.message, {super.cause, super.stackTrace});
 }

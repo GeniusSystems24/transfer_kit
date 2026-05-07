@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 
 /// Represents waveform data for audio files.
@@ -41,7 +40,8 @@ class WaveformData {
   /// Creates WaveformData from a JSON map.
   factory WaveformData.fromMap(Map<String, dynamic> map) {
     return WaveformData(
-      samples: (map['samples'] as List<dynamic>?)
+      samples:
+          (map['samples'] as List<dynamic>?)
               ?.map((e) => (e as num).toDouble())
               .toList() ??
           [],
@@ -250,10 +250,9 @@ class MediaMetadata {
   final int? height;
 
   /// Aspect ratio (width / height)
-  double? get aspectRatio =>
-      (width != null && height != null && height! > 0)
-          ? width! / height!
-          : null;
+  double? get aspectRatio => (width != null && height != null && height! > 0)
+      ? width! / height!
+      : null;
 
   /// Image orientation from EXIF (1-8)
   final int? orientation;
@@ -655,7 +654,9 @@ class MediaMetadata {
     final parts = <String>[];
     if (mimeType != null) parts.add('mimeType: $mimeType');
     if (fileSize != null) parts.add('fileSize: $fileSize');
-    if (width != null && height != null) parts.add('dimensions: ${width}x$height');
+    if (width != null && height != null) {
+      parts.add('dimensions: ${width}x$height');
+    }
     if (durationInSeconds != null) parts.add('duration: ${durationInSeconds}s');
     return 'MediaMetadata(${parts.join(', ')})';
   }

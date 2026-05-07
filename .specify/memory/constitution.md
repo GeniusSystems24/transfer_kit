@@ -58,8 +58,8 @@ important than rapid feature additions.
 TransferKit is a production-oriented Flutter file transfer toolkit. Its
 responsibilities are:
 
-1. Upload files to Firebase Storage.
-2. Download files from Firebase Storage or supported file URLs.
+1. Upload files to any backend via a `TransferDriver` implementation.
+2. Download files from any URI-addressable source via a `TransferDriver` implementation.
 3. Track transfer progress in real time.
 4. Manage transfer lifecycle states: waiting, running, paused, completed,
    error, cancelled, cached.
@@ -84,7 +84,7 @@ TransferKit **owns**:
 - Local task persistence
 - Local file caching
 - Progress streams and stream sharing
-- Firebase Storage integration
+- Transfer driver abstraction (`TransferDriver` interface)
 - Metadata extraction
 - Reusable file/media widgets
 
@@ -152,8 +152,8 @@ Rules:
 
 - UI widgets MUST observe task streams.
 - UI widgets MUST NOT directly mutate task internals.
-- Firebase Storage events MUST update the same task model used elsewhere in
-  the package.
+- Driver `TransferProgressEvent` emissions MUST update the same task model
+  used elsewhere in the package.
 - Background transfer events MUST update the same task model.
 - Cache hits MUST update task state consistently.
 - Duplicate representations of the same logical transfer MUST be avoided.
@@ -198,22 +198,31 @@ Rules:
 **Rationale**: A "cached but missing" state is a silent data-loss bug for
 the consuming app and corrupts UI assumptions about availability.
 
-### VI. Firebase Storage Integration Boundary
+### VI. Provider Abstraction Boundary
 
-Firebase Storage is the current primary transfer provider.
+`TransferDriver` is the abstraction boundary between TransferKit's transfer
+orchestration layer and any concrete storage backend.
 
 Rules:
 
-- Firebase-specific code MUST remain isolated from generic models where
-  practical.
-- Public models SHOULD NOT become unnecessarily coupled to Firebase
-  internals.
-- If future provider support is added, it MUST be introduced through clear
-  abstractions.
-- Firebase errors MUST be mapped into typed TransferKit exceptions.
+- All upload and download I/O MUST flow through a `TransferDriver`
+  implementation. No storage-provider SDK MAY be called directly from
+  `FileTaskRepository`, `FileTask`, or any model/extension.
+- `DownloadRequest` and `UploadRequest` MUST NOT contain credentials or
+  provider-specific fields. Authentication belongs in the driver constructor.
+- `TransferCapabilities` MUST be checked synchronously before any `await`
+  inside `pauseTask()`, `resumeTask()`, `cancelTask()`, `createDownloadTask()`,
+  and `createUploadTask()`; an `UnsupportedCapabilityException` MUST be thrown
+  immediately if the flag is `false`.
+- Driver errors MUST be surfaced as `TransferFailed` events and mapped into
+  typed TransferKit exceptions where appropriate.
+- The `FakeTransferDriver` in `test/src/fake/` is the canonical test double;
+  tests MUST use it instead of mocking `FileTaskRepository` internals.
 
-**Rationale**: Today the package targets Firebase, but a clean boundary
-keeps the door open for additional providers without API churn.
+**Rationale**: The provider abstraction decouples transfer mechanics from
+any single backend (Firebase, HTTP, S3, local copy). This lets consumers
+swap or layer backends without touching model or orchestration code, and
+enables fully offline test suites.
 
 ### VII. Background Transfer Honesty
 
@@ -485,4 +494,4 @@ file layout live in `CLAUDE.md` at the package root. That file is subordinate
 to this constitution: if the two ever conflict, this document wins and
 `CLAUDE.md` MUST be corrected.
 
-**Version**: 1.1.0 | **Ratified**: 2026-05-06 | **Last Amended**: 2026-05-07
+**Version**: 2.0.0 | **Ratified**: 2026-05-06 | **Last Amended**: 2026-05-07

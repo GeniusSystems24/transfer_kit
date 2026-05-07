@@ -3,15 +3,15 @@
 [![pub package](https://img.shields.io/pub/v/transfer_kit.svg)](https://pub.dev/packages/transfer_kit)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B?logo=flutter)](https://flutter.dev)
-[![Firebase](https://img.shields.io/badge/Firebase-Storage-FFCA28?logo=firebase)](https://firebase.google.com/products/storage)
 [![Platform](https://img.shields.io/badge/Platform-All-blueviolet)](https://flutter.dev)
-[![Live Demo](https://img.shields.io/badge/Live_Demo-View-success)](https://geniussystems24.github.io/transfer_kit)
 
-**Production-ready file transfer solution for Flutter with Firebase Storage, smart caching, and stream sharing.**
+**Provider-agnostic file transfer solution for Flutter — smart caching, stream sharing, and pluggable backends.**
+
+> **Upgrading from 2.x?** See [MIGRATION.md](MIGRATION.md).
 
 ```dart
 FileLoadingCard(
-  url: 'https://firebasestorage.googleapis.com/.../image.jpg',
+  url: 'https://cdn.example.com/image.jpg',
   onLoaded: (file) => Image.file(file),
 )
 ```
@@ -34,7 +34,7 @@ FileLoadingCard(
 
 ## Features
 
-- **File Upload & Download** — Full Firebase Storage integration with real-time progress tracking
+- **File Upload & Download** — Provider-agnostic with real-time progress tracking via any `TransferDriver`
 - **Stream Sharing** — Optimized resource usage when multiple widgets request the same file
 - **Smart Caching** — Automatic file caching to avoid redundant downloads
 - **Task Management** — Pause, resume, cancel, and retry file operations
@@ -55,12 +55,14 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  transfer_kit: ^2.1.0
+  transfer_kit: ^3.0.0
 ```
+
+No Firebase packages required.
 
 ### Basic Setup
 
-Customize the library behavior with `TransferKitConfig`:
+Initialize with a driver and optional configuration:
 
 ```dart
 import 'package:transfer_kit/transfer_kit.dart';
@@ -68,8 +70,11 @@ import 'package:transfer_kit/transfer_kit.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Configure before initialization
   await TransferKitConfig.init(
+    // Required: choose a driver (or implement your own)
+    driver: HttpDownloadDriver(
+      headers: {'Authorization': 'Bearer $myToken'},
+    ),
     maxConcurrentDownloads: 3,
     maxConcurrentUploads: 2,
     streamCleanupDelay: Duration(seconds: 5),

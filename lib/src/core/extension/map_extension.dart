@@ -43,14 +43,12 @@ extension MapStringDynamicExtension on Map<String, dynamic> {
         if (entry.value is Map<String, dynamic>)
           entry.key: (entry.value as Map<String, dynamic>).mapCanConvertToJson()
         else if (entry.value is List<dynamic>)
-          entry.key:
-              (entry.value as List<dynamic>)
-                  .take(3)
-                  .map(
-                    (e) =>
-                        e is Map<String, dynamic> ? e.mapCanConvertToJson() : e,
-                  )
-                  .toList()
+          entry.key: (entry.value as List<dynamic>)
+              .take(3)
+              .map(
+                (e) => e is Map<String, dynamic> ? e.mapCanConvertToJson() : e,
+              )
+              .toList()
         else if (entry.value is DateTime)
           entry.key: (entry.value as DateTime).toIso8601String()
         else

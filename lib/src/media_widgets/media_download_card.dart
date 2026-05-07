@@ -32,7 +32,7 @@ class MediaDownloadCard extends StatelessWidget {
   final Widget Function(BuildContext context, TaskItem item) completedBuilder;
   final Widget Function(BuildContext context)? emptyBuilder;
   final Widget Function(BuildContext context, TaskItem? item, Exception? error)?
-      errorBuilder;
+  errorBuilder;
 
   // Enhanced thumbnail support
   final String? thumbnailUrl;
@@ -292,8 +292,8 @@ class MediaDownloadCard extends StatelessWidget {
       case TaskStatus.running:
         return (item?.allowPause ?? false)
             ? onPause == null
-                ? null
-                : () => onPause?.call(item!)
+                  ? null
+                  : () => onPause?.call(item!)
             : null;
       case TaskStatus.paused:
         return onResume == null ? null : () => onResume?.call(item!);

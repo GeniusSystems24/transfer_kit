@@ -87,7 +87,8 @@ class MetadataExtractionService {
           : null;
 
       // Use mime package for accurate MIME type detection
-      final mimeType = lookupMimeType(file.path) ?? _fallbackMimeType(extension);
+      final mimeType =
+          lookupMimeType(file.path) ?? _fallbackMimeType(extension);
 
       // Base metadata from file system
       var metadata = MediaMetadata(
@@ -134,7 +135,9 @@ class MetadataExtractionService {
       // Merge with existing metadata (existing takes precedence)
       if (existingMetadata != null) {
         metadata = existingMetadata.mergeWith(
-          metadata.copyWith(source: existingMetadata.source ?? MetadataSource.local),
+          metadata.copyWith(
+            source: existingMetadata.source ?? MetadataSource.local,
+          ),
         );
       }
 
@@ -273,10 +276,7 @@ class MetadataExtractionService {
       final dimensions = _getImageDimensionsFromHeader(bytes);
       if (dimensions == null) return null;
 
-      return MediaMetadata(
-        width: dimensions.$1,
-        height: dimensions.$2,
-      );
+      return MediaMetadata(width: dimensions.$1, height: dimensions.$2);
     } catch (e) {
       return null;
     }
@@ -285,9 +285,14 @@ class MetadataExtractionService {
   /// Gets image dimensions by reading file header bytes.
   (int, int)? _getImageDimensionsFromHeader(Uint8List bytes) {
     // PNG
-    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
-      final width = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
-      final height = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+    if (bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47) {
+      final width =
+          (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+      final height =
+          (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
       return (width, height);
     }
 
@@ -372,9 +377,7 @@ class MetadataExtractionService {
 
       // Note: video_thumbnail doesn't provide duration/dimensions
       // For that, you'd need ffmpeg_kit_flutter or similar
-      return MediaMetadata(
-        thumbnail: thumbnail,
-      );
+      return MediaMetadata(thumbnail: thumbnail);
     } catch (e) {
       if (config.enableLogging) {
         print('MetadataExtractionService: Error extracting video metadata: $e');
@@ -435,10 +438,15 @@ class MetadataExtractionService {
     try {
       // Create a temporary file for the waveform data
       final tempDir = await getTemporaryDirectory();
-      final waveformFile = File('${tempDir.path}/waveform_${DateTime.now().millisecondsSinceEpoch}.wave');
+      final waveformFile = File(
+        '${tempDir.path}/waveform_${DateTime.now().millisecondsSinceEpoch}.wave',
+      );
 
       // Calculate total samples based on duration
-      final totalSamples = (duration.inSeconds * samplesPerSecond).clamp(10, 10000);
+      final totalSamples = (duration.inSeconds * samplesPerSecond).clamp(
+        10,
+        10000,
+      );
 
       // Extract waveform using just_waveform
       final progressStream = JustWaveform.extract(
@@ -467,14 +475,14 @@ class MetadataExtractionService {
         final amplitude = waveform[i];
         final absValue = amplitude.abs();
         if (absValue > maxAmplitude) maxAmplitude = absValue;
-            }
+      }
 
       // Extract normalized samples
       for (int i = 0; i < frameCount; i++) {
         final amplitude = waveform[i];
         // Normalize amplitude to 0.0-1.0
         samples.add(amplitude.abs() / maxAmplitude);
-            }
+      }
 
       // Clean up temp file
       if (await waveformFile.exists()) {
@@ -488,7 +496,9 @@ class MetadataExtractionService {
         if (sample > peakAmplitude) peakAmplitude = sample;
         sumAmplitude += sample;
       }
-      final averageAmplitude = samples.isNotEmpty ? sumAmplitude / samples.length : 0.0;
+      final averageAmplitude = samples.isNotEmpty
+          ? sumAmplitude / samples.length
+          : 0.0;
 
       // Determine channels from waveform flags (bit 0: 0=mono, 1=stereo)
       final channels = (waveform.flags & 0x1) == 1 ? 2 : 1;
@@ -538,10 +548,7 @@ class MetadataExtractionService {
       // Close document to free resources
       await document.close();
 
-      return MediaMetadata(
-        pageCount: pageCount,
-        thumbnail: thumbnail,
-      );
+      return MediaMetadata(pageCount: pageCount, thumbnail: thumbnail);
     } catch (e) {
       if (TransferKitConfig.instance.enableLogging) {
         print('MetadataExtractionService: Error extracting PDF metadata: $e');

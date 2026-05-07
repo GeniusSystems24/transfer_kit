@@ -124,7 +124,7 @@ class FileTaskController {
   }
 
   Future<(String? filePath, StreamController<TaskItem>? streamController)>
-      enqueueOrResume(Task task, bool autoStart) async {
+  enqueueOrResume(Task task, bool autoStart) async {
     final filePath = _filePaths[task.url];
 
     if (filePath != null) return (filePath, null);
@@ -370,41 +370,41 @@ class TaskItem implements TaskProgressUpdate, TaskStatusUpdate {
   });
 
   TaskItem.from(this.task)
-      : expectedFileSize = 0,
-        status = TaskStatus.enqueued,
-        progress = 0.0,
-        networkSpeed = 0.0,
-        timeRemaining = Duration.zero,
-        exception = null;
+    : expectedFileSize = 0,
+      status = TaskStatus.enqueued,
+      progress = 0.0,
+      networkSpeed = 0.0,
+      timeRemaining = Duration.zero,
+      exception = null;
 
   TaskItem.fromJson(Map<String, dynamic> json)
-      : task = Task.createFromJson(json['task'] ?? json),
-        expectedFileSize = json['expectedFileSize'] ?? 0,
-        status = json['status'] ?? TaskStatus.enqueued,
-        progress = json['progress'] ?? 0.0,
-        networkSpeed = json['networkSpeed'] ?? 0.0,
-        timeRemaining = json['timeRemaining'] ?? Duration.zero,
-        exception = json['exception'];
+    : task = Task.createFromJson(json['task'] ?? json),
+      expectedFileSize = json['expectedFileSize'] ?? 0,
+      status = json['status'] ?? TaskStatus.enqueued,
+      progress = json['progress'] ?? 0.0,
+      networkSpeed = json['networkSpeed'] ?? 0.0,
+      timeRemaining = json['timeRemaining'] ?? Duration.zero,
+      exception = json['exception'];
 
   TaskItem.fromUpdate(TaskUpdate update)
-      : task = update.task,
-        expectedFileSize = 0,
-        status =
-            update is TaskStatusUpdate ? update.status : TaskStatus.enqueued,
-        progress = update is TaskProgressUpdate ? update.progress : 0.0,
-        networkSpeed = update is TaskProgressUpdate ? update.networkSpeed : 0.0,
-        timeRemaining =
-            update is TaskProgressUpdate ? update.timeRemaining : Duration.zero,
-        exception = update is TaskStatusUpdate ? update.exception : null;
+    : task = update.task,
+      expectedFileSize = 0,
+      status = update is TaskStatusUpdate ? update.status : TaskStatus.enqueued,
+      progress = update is TaskProgressUpdate ? update.progress : 0.0,
+      networkSpeed = update is TaskProgressUpdate ? update.networkSpeed : 0.0,
+      timeRemaining = update is TaskProgressUpdate
+          ? update.timeRemaining
+          : Duration.zero,
+      exception = update is TaskStatusUpdate ? update.exception : null;
 
   TaskItem.fromRecord(TaskRecord record)
-      : task = record.task,
-        expectedFileSize = record.expectedFileSize,
-        status = record.status,
-        progress = record.progress,
-        networkSpeed = 0,
-        timeRemaining = Duration.zero,
-        exception = record.exception;
+    : task = record.task,
+      expectedFileSize = record.expectedFileSize,
+      status = record.status,
+      progress = record.progress,
+      networkSpeed = 0,
+      timeRemaining = Duration.zero,
+      exception = record.exception;
 
   @override
   TaskItem copyWith({
@@ -437,10 +437,12 @@ class TaskItem implements TaskProgressUpdate, TaskStatusUpdate {
     return copyWith(
       status: update is TaskStatusUpdate ? update.status : status,
       progress: newProgress > 0 ? newProgress : progress,
-      networkSpeed:
-          update is TaskProgressUpdate ? update.networkSpeed : networkSpeed,
-      timeRemaining:
-          update is TaskProgressUpdate ? update.timeRemaining : timeRemaining,
+      networkSpeed: update is TaskProgressUpdate
+          ? update.networkSpeed
+          : networkSpeed,
+      timeRemaining: update is TaskProgressUpdate
+          ? update.timeRemaining
+          : timeRemaining,
       exception: update is TaskStatusUpdate ? update.exception : exception,
     );
   }

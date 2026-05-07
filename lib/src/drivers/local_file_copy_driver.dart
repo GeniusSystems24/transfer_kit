@@ -17,8 +17,6 @@ import '../core/driver/transfer_driver.dart';
 class LocalFileCopyDriver implements TransferDriver {
   LocalFileCopyDriver();
 
-  static const int _chunkSize = 64 * 1024; // 64 KB
-
   final Map<String, bool> _cancelFlags = {};
 
   static const TransferCapabilities _capabilities = TransferCapabilities(
@@ -87,10 +85,7 @@ class LocalFileCopyDriver implements TransferDriver {
         return;
       }
 
-      yield TransferCompleted(
-        taskId: request.taskId,
-        localPath: destPath,
-      );
+      yield TransferCompleted(taskId: request.taskId, localPath: destPath);
     } catch (e, st) {
       final dest = File(destPath);
       if (await dest.exists()) await dest.delete();
@@ -118,7 +113,10 @@ class LocalFileCopyDriver implements TransferDriver {
       if (!await sourceFile.exists()) {
         yield TransferFailed(
           taskId: request.taskId,
-          error: FileSystemException('Source file not found', request.localPath),
+          error: FileSystemException(
+            'Source file not found',
+            request.localPath,
+          ),
         );
         return;
       }
@@ -185,7 +183,7 @@ class LocalFileCopyDriver implements TransferDriver {
 
   @override
   Future<void> pause(String taskId) async {
-    throw UnsupportedCapabilityException(
+    throw const UnsupportedCapabilityException(
       'LocalFileCopyDriver does not support pause.',
       capability: 'supportsPause',
     );
@@ -193,7 +191,7 @@ class LocalFileCopyDriver implements TransferDriver {
 
   @override
   Future<void> resume(String taskId) async {
-    throw UnsupportedCapabilityException(
+    throw const UnsupportedCapabilityException(
       'LocalFileCopyDriver does not support resume.',
       capability: 'supportsResume',
     );

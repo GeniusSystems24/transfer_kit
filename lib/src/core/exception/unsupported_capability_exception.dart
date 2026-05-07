@@ -3,10 +3,7 @@
 ///
 /// Always thrown synchronously — never async.
 class UnsupportedCapabilityException implements Exception {
-  const UnsupportedCapabilityException(
-    this.message, {
-    this.capability,
-  });
+  const UnsupportedCapabilityException(this.message, {this.capability});
 
   /// Human-readable description of the unsupported operation.
   final String message;

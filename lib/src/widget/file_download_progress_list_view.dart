@@ -39,31 +39,31 @@ class FileDownloadProgressListView extends StatefulWidget {
 
   /// Custom builder for file item title
   final Widget Function(BuildContext context, FileTask task, int index)?
-      titleBuilder;
+  titleBuilder;
 
   /// Custom builder for file item subtitle
   final Widget Function(BuildContext context, FileTask task, int index)?
-      subtitleBuilder;
+  subtitleBuilder;
 
   /// Custom builder for file item trailing widget
   final Widget Function(BuildContext context, FileTask task, int index)?
-      trailingBuilder;
+  trailingBuilder;
 
   /// Custom builder for file item leading widget
   final Widget Function(BuildContext context, FileTask task, int index)?
-      leadingBuilder;
+  leadingBuilder;
 
   /// Custom progress indicator builder
   final Widget Function(BuildContext context, FileTask task, int index)?
-      progressBuilder;
+  progressBuilder;
 
   /// Custom builder for the header widget displayed above the list
   final Widget Function(BuildContext context, MultiDownloadFileTask progress)?
-      headerBuilder;
+  headerBuilder;
 
   /// Custom builder for the footer widget displayed below the list
   final Widget Function(BuildContext context, MultiDownloadFileTask progress)?
-      footerBuilder;
+  footerBuilder;
 
   /// Custom item padding
   final EdgeInsetsGeometry itemPadding;
@@ -104,10 +104,12 @@ class FileDownloadProgressListView extends StatefulWidget {
   });
 
   @override
-  State<FileDownloadProgressListView> createState() => _FileDownloadProgressListViewState();
+  State<FileDownloadProgressListView> createState() =>
+      _FileDownloadProgressListViewState();
 }
 
-class _FileDownloadProgressListViewState extends State<FileDownloadProgressListView> {
+class _FileDownloadProgressListViewState
+    extends State<FileDownloadProgressListView> {
   final Set<int> _reportedFileIndices = {};
   bool _allFilesReported = false;
 
@@ -126,10 +128,14 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
     }
 
     // Check if all files are completed to trigger onAllFilesDownloaded callback (only once)
-    if (widget.onAllFilesDownloaded != null && widget.progress.isComplete && !_allFilesReported) {
+    if (widget.onAllFilesDownloaded != null &&
+        widget.progress.isComplete &&
+        !_allFilesReported) {
       _allFilesReported = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final files = widget.progress.tasks.where((task) => task.isComplete).toList();
+        final files = widget.progress.tasks
+            .where((task) => task.isComplete)
+            .toList();
         widget.onAllFilesDownloaded!(files);
       });
     }
@@ -161,9 +167,9 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
                       task,
                       index,
                     ).animate().fadeIn(
-                          duration: const Duration(milliseconds: 300),
-                          delay: Duration(milliseconds: 50 * index),
-                        );
+                      duration: const Duration(milliseconds: 300),
+                      delay: Duration(milliseconds: 50 * index),
+                    );
                   },
                 ),
         ),
@@ -262,9 +268,8 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
                         ),
                         child: Text(
                           '${widget.progress.overallProgressPercentage.toStringAsFixed(1)}%',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -283,11 +288,11 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
         ],
       ),
     ).animate().slideY(
-          begin: -0.2,
-          end: 0,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutQuad,
-        );
+      begin: -0.2,
+      end: 0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutQuad,
+    );
   }
 
   Widget _buildDownloadSpeedWidget(BuildContext context) {
@@ -310,9 +315,9 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
           Text(
             '2.5 MB/s', // Replace with actual calculated speed
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -320,10 +325,12 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
   }
 
   Widget _buildDefaultFooter(BuildContext context) {
-    final completedFiles =
-        widget.progress.tasks.where((task) => task.isComplete).length;
-    final completionPercent =
-        widget.progress.tasks.isEmpty ? 0.0 : completedFiles / widget.progress.tasks.length;
+    final completedFiles = widget.progress.tasks
+        .where((task) => task.isComplete)
+        .length;
+    final completionPercent = widget.progress.tasks.isEmpty
+        ? 0.0
+        : completedFiles / widget.progress.tasks.length;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -364,11 +371,9 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 3,
-                            value: widget.progress.overallProgressPercentage / 100,
-                            color: _getStatusColor(
-                              context,
-                              completionPercent,
-                            ),
+                            value:
+                                widget.progress.overallProgressPercentage / 100,
+                            color: _getStatusColor(context, completionPercent),
                           ),
                         ),
                 ),
@@ -383,10 +388,11 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
                             ? 'All downloads completed'
                             : 'Completed: $completedFiles/${widget.progress.tasks.length}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      if (!widget.progress.isComplete && widget.progress.tasks.isNotEmpty)
+                      if (!widget.progress.isComplete &&
+                          widget.progress.tasks.isNotEmpty)
                         Text(
                           _getEstimatedTimeRemaining(context),
                           style: Theme.of(context).textTheme.bodySmall,
@@ -399,34 +405,30 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
           ),
           if (widget.progress.isComplete)
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: 16,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
                   ),
-                  SizedBox(width: 4),
-                  Text(
-                    'Complete',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ],
-              ),
-            )
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        'Complete',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
                 .animate()
                 .fadeIn(duration: const Duration(milliseconds: 300))
                 .scale(
@@ -436,11 +438,11 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
         ],
       ),
     ).animate().slideY(
-          begin: 0.2,
-          end: 0,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutQuad,
-        );
+      begin: 0.2,
+      end: 0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutQuad,
+    );
   }
 
   String _getEstimatedTimeRemaining(BuildContext context) {
@@ -467,14 +469,14 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
         side: BorderSide(
           color: task.isComplete
               ? Colors.green.withValues(alpha: 0.3)
-              : Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.1),
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
       child: InkWell(
-        onTap: widget.onItemTap != null ? () => widget.onItemTap!(task, index) : null,
+        onTap: widget.onItemTap != null
+            ? () => widget.onItemTap!(task, index)
+            : null,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: widget.itemPadding,
@@ -594,43 +596,43 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
     final iconColor = fileTypeInfo.color;
 
     return Stack(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(iconData, color: iconColor, size: 24),
-        ),
-        if (task.isComplete)
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(2),
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 2,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
+                color: iconColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 14,
-              ),
+              child: Icon(iconData, color: iconColor, size: 24),
             ),
-          ),
-      ],
-    )
+            if (task.isComplete)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: Colors.green,
+                    size: 14,
+                  ),
+                ),
+              ),
+          ],
+        )
         .animate(
           // Only animate if the task is running
           target: task.state == FileTaskState.running ? 1 : 0,
@@ -644,11 +646,11 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
     return Text(
       fileName,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: task.isComplete
-                ? Colors.black87
-                : Theme.of(context).colorScheme.onSurface,
-          ),
+        fontWeight: FontWeight.bold,
+        color: task.isComplete
+            ? Colors.black87
+            : Theme.of(context).colorScheme.onSurface,
+      ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -663,8 +665,8 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
       return Text(
         '${task.bytesTransferred.formatBytes} / ${task.totalBytes.formatBytes}$transferRate',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       );
     } else {
       return const SizedBox.shrink();
@@ -703,27 +705,27 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            text,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(width: 4),
-          Icon(icon, color: color, size: 14),
-        ],
-      ),
-    )
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                text,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(icon, color: color, size: 14),
+            ],
+          ),
+        )
         .animate(target: task.state == FileTaskState.running ? 1 : 0)
         .shimmer(duration: const Duration(seconds: 1));
   }
@@ -744,8 +746,8 @@ class _FileDownloadProgressListViewState extends State<FileDownloadProgressListV
             task.isComplete
                 ? Colors.green
                 : task.state == FileTaskState.error
-                    ? Colors.red
-                    : Theme.of(context).colorScheme.primary,
+                ? Colors.red
+                : Theme.of(context).colorScheme.primary,
           ),
         );
       },

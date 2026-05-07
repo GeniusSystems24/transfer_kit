@@ -39,6 +39,10 @@ export 'src/core/driver/upload_request.dart';
 export 'src/core/driver/transfer_progress_event.dart';
 export 'src/core/exception/unsupported_capability_exception.dart';
 
+// Built-in drivers
+export 'src/drivers/http_download_driver.dart';
+export 'src/drivers/local_file_copy_driver.dart';
+
 // Core extensions
 export 'src/core/extension/file_path_extension.dart';
 export 'src/core/extension/num_extension.dart';
@@ -95,5 +99,3 @@ export 'src/widget/download_file_widget.dart';
 
 // Media Widgets (download image/video/document with progress)
 export 'src/media_widgets/media_widgets.dart';
-
-

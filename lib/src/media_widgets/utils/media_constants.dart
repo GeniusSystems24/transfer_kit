@@ -136,5 +136,5 @@ class FileTypeIcons {
     }
   }
 
-   FileTypeIcons._();
+  FileTypeIcons._();
 }
